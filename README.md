@@ -1,7 +1,6 @@
 # BioDock 🧬
 *A click-and-run bioinformatics pipeline runner for wet lab biologists.*
 
----
 
 ## 🌟 Overview
 BioDock is a desktop application that lets you run common bioinformatics workflows
@@ -9,7 +8,6 @@ without needing to touch the command line. Designed for wet lab researchers who
 want quick quality control and analysis of sequencing data, BioDock wraps standard
 tools (e.g., FastQC, aligners, quantifiers) inside an easy-to-use graphical interface.
 
----
 
 ## 🚀 Features
 - **One-click analysis** – load FASTQ files and start pipelines instantly.
@@ -20,7 +18,6 @@ tools (e.g., FastQC, aligners, quantifiers) inside an easy-to-use graphical inte
 - **Metadata support** – import sample sheets (CSV/Excel) for structured experiments.
 - **Cross-platform** – runs on Windows, macOS, and Linux with Docker.
 
----
 
 ## 📸 UI Preview
 *(screenshot placeholder here)*
@@ -30,14 +27,11 @@ tools (e.g., FastQC, aligners, quantifiers) inside an easy-to-use graphical inte
 - **Top bar** – Pipeline selector & Run button
 - **Bottom bar** – progress + Docker status
 
----
 
 ## 🔧 Installation
 1. Install [Docker](https://www.docker.com/).
-2. Download the BioDock installer from [Releases](link-to-your-releases).
+2. Download the BioDock installer from [Releases](https://github.com/antonio-dimeglio/BioDock/releases).
 3. Launch the app – everything else is handled automatically.
-
----
 
 ## 🧪 Quick Start
 1. Open BioDock.
@@ -45,8 +39,6 @@ tools (e.g., FastQC, aligners, quantifiers) inside an easy-to-use graphical inte
 3. Select a pipeline preset (e.g., **FastQC only**).
 4. Hit **Run**.
 5. View reports directly in the app.
-
----
 
 ## 🗺️ Roadmap
 - [x] Run FastQC on single samples
@@ -56,13 +48,9 @@ tools (e.g., FastQC, aligners, quantifiers) inside an easy-to-use graphical inte
 - [ ] Metadata editor (sample sheets)
 - [ ] Summary plots & PDF report export
 
----
-
 ## 🤝 Contributing
 BioDock is in early development. Contributions and feedback are welcome!
-Please open an [issue](link-to-issues) or submit a pull request.
-
----
+Please open an [issue](https://github.com/antonio-dimeglio/BioDock/issues) or submit a pull request.
 
 ## 📜 License
 MIT License – see [LICENSE](LICENSE) for details.

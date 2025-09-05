@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.web.*?>
 
-<VBox alignment="CENTER" prefHeight="171.0" prefWidth="168.0" spacing="20.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.12" fx:controller="io.github.antoniodimeglio.biodock.biodock.HelloController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-    </padding>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            prefHeight="1024"
+            prefWidth="768"
+            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.MainController">
+    <top>
+        <ToolBar>
+            <Button fx:id="openFileBtn" text="Select FASTQ" onAction="#handleOpenFile"/>
+            <Button fx:id="runBtn" text="Run FastQC" onAction="#handleRunFastqc"/>
+            <Label fx:id="statusLabel" text="Idle" />
+        </ToolBar>
+    </top>
 
-    <Label fx:id="welcomeText" />
-</VBox>
+    <center>
+        <TabPane fx:id="tabPane">
+            <Tab text="Logs" closable="false">
+                <TextArea fx:id="logArea" editable="false" wrapText="true"/>
+            </Tab>
+            <Tab text="Report" closable="false">
+                <WebView fx:id="reportView"/>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>
