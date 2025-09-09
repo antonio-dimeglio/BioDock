@@ -1,0 +1,51 @@
+package io.github.antoniodimeglio.biodock.biodock.model
+
+import java.io.File
+import java.time.LocalDateTime
+import java.util.UUID
+
+
+data class Project(
+    val id: String = UUID.randomUUID().toString(),
+    var name: String,
+    var description: String = "",
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+    var lastModified: LocalDateTime = LocalDateTime.now(),
+    val samples: MutableList<Sample> = mutableListOf(),
+    var workingDirectory: File? = null,
+    var selectedPipeline: String? = null,
+) {
+    fun addSample(sample: Sample) {
+        samples.add(sample)
+        lastModified = LocalDateTime.now()
+    }
+
+    fun removeSample(sampleId: String) {
+        samples.removeIf { it.id == sampleId}
+        lastModified = LocalDateTime.now()
+    }
+
+    fun getSampleById(id: String): Sample? = samples.find { it.id == id }
+
+    fun getCompletedSamples(): List<Sample> =
+        samples.filter { it.status == SampleStatus.COMPLETED }
+
+    fun getPendingSamples(): List<Sample> =
+        samples.filter { it.status == SampleStatus.PENDING }
+
+    fun getRunningSamples(): List<Sample> =
+        samples.filter { it.status == SampleStatus.RUNNING }
+
+    fun getFailedSamples(): List<Sample> =
+        samples.filter { it.status == SampleStatus.FAILED }
+
+    fun getOverallStatus(): String {
+        return when {
+            samples.isEmpty() -> "Empty"
+            getRunningSamples().isNotEmpty() -> "Running"
+            getFailedSamples().isNotEmpty() -> "Some Failed"
+            getPendingSamples().isNotEmpty() -> "Ready"
+            else -> "Complete"
+        }
+    }
+}

@@ -3,7 +3,7 @@ package io.github.antoniodimeglio.biodock.biodock.service
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-object FastqcRunner {
+object FastQCService {
 
     fun runFastqc(
         fastqPath: String,

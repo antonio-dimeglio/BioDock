@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.web.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/11.0.1"
+            prefHeight="800.0"
+            prefWidth="1200.0"
+            styleClass="root"
+            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.MainController">
+
+    <top>
+        <VBox>
+            <!-- Menu Bar -->
+            <MenuBar>
+                <Menu text="File">
+                    <MenuItem text="New Project" onAction="#newProject"/>
+                    <MenuItem text="Open Project"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Import Sample Sheet" onAction="#importSampleSheet"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="Exit"/>
+                </Menu>
+                <Menu text="Tools">
+                    <MenuItem text="Pipeline Presets"/>
+                    <MenuItem text="Docker Status"/>
+                    <MenuItem text="Settings"/>
+                </Menu>
+                <Menu text="Help">
+                    <MenuItem text="Documentation"/>
+                    <MenuItem text="About BioDock"/>
+                </Menu>
+            </MenuBar>
+
+            <!-- Main Toolbar -->
+            <ToolBar styleClass="main-toolbar">
+                <Region HBox.hgrow="ALWAYS"/> <!-- Spacer -->
+
+                <Label text="Pipeline:" styleClass="toolbar-label"/>
+                <ComboBox fx:id="pipelineSelector" prefWidth="200" styleClass="pipeline-selector"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button" onAction="#handleOpenFile"/>
+                <Button fx:id="runBtn" text="▶ Run Analysis" styleClass="success-button" onAction="#handleRunFastqc"/>
+
+                <Separator orientation="VERTICAL"/>
+
+                <Label text="Status:" styleClass="toolbar-label"/>
+                <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
+            </ToolBar>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="10" prefWidth="280" styleClass="sidebar">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <!-- Project Section -->
+            <VBox spacing="5">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="📊 Current Project" styleClass="section-header"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="+" styleClass="small-button" onAction="#newProject"/>
+                </HBox>
+                <Label fx:id="projectNameLabel" text="New Project" styleClass="project-name"/>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Samples Section -->
+            <VBox spacing="5" VBox.vgrow="ALWAYS">
+                <Label text="📄 Samples" styleClass="section-header"/>
+                <ListView fx:id="sampleListView" prefHeight="300" VBox.vgrow="ALWAYS" styleClass="sample-list"/>
+                <HBox spacing="5">
+                    <Button text="Add Files" prefWidth="120" styleClass="secondary-button" onAction="#handleOpenFile"/>
+                    <Button text="Remove" prefWidth="80" styleClass="danger-button" onAction="#removeSample"/>
+                </HBox>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Quick Actions -->
+            <VBox spacing="5">
+                <Label text="🔧 Quick Actions" styleClass="section-header"/>
+                <Button text="Import Sample Sheet" prefWidth="200" styleClass="secondary-button" onAction="#importSampleSheet"/>
+                <Button text="Export Results" prefWidth="200" styleClass="secondary-button" onAction="#exportResults"/>
+            </VBox>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox styleClass="center-panel">
+            <!-- Progress Section -->
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="progress-section">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="Progress:"/>
+                <ProgressBar fx:id="progressBar" prefWidth="300"/>
+                <Label fx:id="progressLabel"/>
+            </HBox>
+
+            <!-- Main Tabs -->
+            <TabPane fx:id="tabPane" VBox.vgrow="ALWAYS" styleClass="main-tabs">
+
+                <!-- Overview Tab -->
+                <Tab text="📋 Overview" closable="false">
+                    <VBox spacing="20" styleClass="tab-content">
+                        <padding>
+                            <Insets top="20" right="20" bottom="20" left="20"/>
+                        </padding>
+
+                        <Label text="Analysis Summary" styleClass="tab-title"/>
+
+                        <GridPane hgap="15" vgap="10" styleClass="summary-grid">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="100"/>
+                                <ColumnConstraints minWidth="100"/>
+                            </columnConstraints>
+
+                            <Label text="Samples:" styleClass="summary-label" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <Label fx:id="sampleCountLabel" text="0" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                            <Label text="Status:" styleClass="summary-label" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                            <Label fx:id="overallStatusLabel" text="Ready" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                            <Label text="Pipeline:" styleClass="summary-label" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                            <Label fx:id="selectedPipelineLabel" text="None" styleClass="summary-value" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        </GridPane>
+
+                        <Region VBox.vgrow="ALWAYS"/>
+
+                        <VBox spacing="10" styleClass="getting-started">
+                            <Label text="Getting Started:" styleClass="section-header"/>
+                            <Label text="1. Add FASTQ files using the 'Add Files' button" styleClass="help-text"/>
+                            <Label text="2. Select a pipeline from the dropdown menu" styleClass="help-text"/>
+                            <Label text="3. Click 'Run Analysis' to start processing" styleClass="help-text"/>
+                            <Label text="4. View results in the Results tab when complete" styleClass="help-text"/>
+                        </VBox>
+                    </VBox>
+                </Tab>
+
+                <!-- Results Tab -->
+                <Tab text="📊 Results" closable="false">
+                    <VBox styleClass="tab-content">
+                        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="tab-toolbar">
+                            <padding>
+                                <Insets top="10" right="10" bottom="10" left="10"/>
+                            </padding>
+                            <Button text="🔄 Refresh" styleClass="secondary-button" onAction="#refreshResults"/>
+                            <Button text="📤 Export All" styleClass="secondary-button" onAction="#exportAllResults"/>
+                        </HBox>
+
+                        <TableView fx:id="resultsTable" VBox.vgrow="ALWAYS" styleClass="results-table">
+                            <columns>
+                                <TableColumn text="Sample" prefWidth="200"/>
+                                <TableColumn text="Status" prefWidth="120"/>
+                                <TableColumn text="Actions" prefWidth="200"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
+                </Tab>
+
+                <!-- Report Viewer Tab -->
+                <Tab text="📄 Report Viewer" closable="false">
+                    <BorderPane styleClass="tab-content">
+                        <top>
+                            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="tab-toolbar">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+                                <Label text="Viewing:"/>
+                                <ComboBox fx:id="reportSelector" prefWidth="200"/>
+                                <Button text="📱 Open External" styleClass="secondary-button" onAction="#openExternalReport"/>
+                            </HBox>
+                        </top>
+                        <center>
+                            <WebView fx:id="reportView"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+
+                <!-- Logs Tab -->
+                <Tab text="📝 Logs" closable="false">
+                    <BorderPane styleClass="tab-content">
+                        <top>
+                            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="tab-toolbar">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+                                <Button text="🗑 Clear" styleClass="secondary-button" onAction="#clearLogs"/>
+                                <Button text="💾 Save Logs" styleClass="secondary-button" onAction="#saveLogs"/>
+                                <CheckBox fx:id="autoScrollCheckbox" text="Auto-scroll" selected="true"/>
+                            </HBox>
+                        </top>
+                        <center>
+                            <TextArea fx:id="logArea" editable="false" wrapText="true" styleClass="log-area"/>
+                        </center>
+                    </BorderPane>
+                </Tab>
+
+            </TabPane>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_LEFT" spacing="10" styleClass="status-bar">
+            <padding>
+                <Insets top="5" right="10" bottom="5" left="10"/>
+            </padding>
+
+            <Label text="🐳"/>
+            <Label fx:id="dockerStatusLabel" text="Docker: Checking..."/>
+
+            <Separator orientation="VERTICAL"/>
+
+            <Label fx:id="versionLabel" text="BioDock v1.0.0"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Label fx:id="timestampLabel"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
