@@ -9,7 +9,7 @@
             prefWidth="500.0"
             prefHeight="400.0"
             styleClass="dialog-pane"
-            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.NewProjectController">
+            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.ProjectController">
 
     <header>
         <Label text="📊 Create New Project" styleClass="dialog-title"/>

@@ -2,10 +2,14 @@ package io.github.antoniodimeglio.biodock.biodock.model
 
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
 import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
+import io.github.antoniodimeglio.biodock.biodock.util.FileSerializer
+import io.github.antoniodimeglio.biodock.biodock.util.LocalDateSerializer
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID.randomUUID
 
+@Serializable
 enum class SampleStatus(val displayName: String, val cssClass: String) {
     PENDING("Pending", "status-pending"),
     RUNNING("Running", "status-running"),
@@ -14,11 +18,14 @@ enum class SampleStatus(val displayName: String, val cssClass: String) {
     CANCELLED("Cancelled", "status-cancelled")
 }
 
+@Serializable
 data class Sample(
     val id: String = randomUUID().toString(),
     val name: String,
+    @Serializable(with = FileSerializer::class)
     val file: File,
     val fileSize: Long = file.length(),
+    @Serializable(with = LocalDateSerializer::class)
     val addedAt: LocalDateTime = LocalDateTime.now(),
     var status: SampleStatus = SampleStatus.PENDING,
     var analysisResults: AnalysisResult? = null,

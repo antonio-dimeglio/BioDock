@@ -1,19 +1,29 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import io.github.antoniodimeglio.biodock.biodock.util.FileSerializer
+import io.github.antoniodimeglio.biodock.biodock.util.LocalDateSerializer
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.time.Duration
 import java.time.LocalDateTime
 
+@Serializable
 data class AnalysisResult(
     val sampleId: String,
     val pipeline: String,
     val status: SampleStatus,
+    @Serializable(with = LocalDateSerializer::class)
     val startTime: LocalDateTime,
+    @Serializable(with = LocalDateSerializer::class)
     val endTime: LocalDateTime? = null,
-    val outputFiles: List<File> = emptyList(),
+    val outputFiles: List<
+            @Serializable(with = FileSerializer::class)
+            File> = emptyList(),
+    @Serializable(with = FileSerializer::class)
     val logFile: File? = null,
+    @Serializable(with = FileSerializer::class)
     val htmlReport: File? = null,
-    val summary: Map<String, Any> = emptyMap(),
+    val summary: Map<String, String> = emptyMap(),
     val errorMessage: String? = null
 ) {
     val duration: Long?

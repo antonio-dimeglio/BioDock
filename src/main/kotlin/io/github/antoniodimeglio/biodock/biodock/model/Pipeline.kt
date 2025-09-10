@@ -1,5 +1,8 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Pipeline(
     val id: String,
     val name: String,

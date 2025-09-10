@@ -10,7 +10,8 @@
             prefHeight="800.0"
             prefWidth="1200.0"
             styleClass="root"
-            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.MainController">
+            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.MainController"
+            fx:id="borderPane">
 
     <top>
         <VBox>
@@ -19,6 +20,7 @@
                 <Menu text="File">
                     <MenuItem text="New Project" onAction="#newProject"/>
                     <MenuItem text="Open Project"/>
+                    <MenuItem text="Save Project" onAction="#saveProject"/>
                     <SeparatorMenuItem/>
                     <MenuItem text="Import Sample Sheet" onAction="#importSampleSheet"/>
                     <SeparatorMenuItem/>

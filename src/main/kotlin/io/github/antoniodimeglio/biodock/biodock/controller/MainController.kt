@@ -1,5 +1,6 @@
 package io.github.antoniodimeglio.biodock.biodock.controller
 
+
 import io.github.antoniodimeglio.biodock.biodock.model.Project
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
 import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
@@ -12,12 +13,16 @@ import javafx.stage.Stage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
+import javafx.application.Platform
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.fxml.FXMLLoader
+import javafx.scene.input.KeyCombination
 import javafx.scene.input.TransferMode
-import javafx.stage.DirectoryChooser
+import javafx.scene.layout.BorderPane
+import javafx.stage.Modality
 import javafx.util.Duration
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.net.URL
 import java.util.*
@@ -26,6 +31,7 @@ private val logger = KotlinLogging.logger {}
 
 class MainController : Initializable {
 
+    lateinit var borderPane: BorderPane
     lateinit var newProjectButton: Button
 
     // Top toolbar
@@ -55,17 +61,17 @@ class MainController : Initializable {
     @FXML private lateinit var timestampLabel: Label
 
     private val selectedFiles = mutableListOf<File>()
+    private var currentProject = Project(
+        name = "New Project",
+        workingDirectory = File("/BioDockProjects/NewProject/"))
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        logger.info { "Initializing MainController..." }
-
         setupUI()
         setupEventHandlers()
         updateUI()
     }
 
     private fun setupUI() {
-        // Setup pipeline selector
         pipelineSelector.items.addAll(
             "FastQC Only",
             "RNA-seq Quick QC",
@@ -87,6 +93,7 @@ class MainController : Initializable {
         logArea.appendText("Ready to process samples\n")
 
         sampleListView.selectionModel.selectionMode = SelectionMode.MULTIPLE
+
     }
 
     private fun setupEventHandlers() {
@@ -116,9 +123,26 @@ class MainController : Initializable {
                         selectedFiles.add(file)
                     }
                 }
+
+                success = true
+            }
+            updateUI()
+            event.isDropCompleted = success
+            event.consume()
+        }
+
+        Platform.runLater {
+            val scene = borderPane.scene ?: return@runLater
+
+            val osName = System.getProperty("os.name").lowercase()
+            val saveKey = if (osName.contains("mac")) {
+                KeyCombination.keyCombination("Shortcut+S")
+            } else {
+                KeyCombination.keyCombination("Ctrl+S")
             }
 
-            updateUI()
+            // Register the accelerator
+            scene.accelerators[saveKey] = Runnable { saveProject() }
         }
     }
 
@@ -129,6 +153,7 @@ class MainController : Initializable {
 
         sampleListView.items.clear()
         sampleListView.items.addAll(selectedFiles.map { it.name })
+
     }
 
     private fun getFilesFromDialog(): List<File>? {
@@ -173,6 +198,21 @@ class MainController : Initializable {
         timeline.play()
     }
 
+    private fun loadProject(project: Project) {
+        currentProject = project
+        projectNameLabel.text = currentProject.name
+
+        if (currentProject.selectedPipeline?.isNotEmpty() == true){
+            pipelineSelector.value = currentProject.selectedPipeline
+        }
+
+
+    }
+
+    @FXML private fun saveProject(){
+        logger.info { Json.encodeToString(currentProject)}
+
+    }
     @FXML private fun newProject() {
         try {
             val loader = FXMLLoader(javaClass.getResource("/fxml/project-view.fxml"))
@@ -180,15 +220,28 @@ class MainController : Initializable {
 
             val controller = loader.getController<ProjectController>()
             controller.setDialogPane(dialogPane)
+
+            val dialog = Dialog<ButtonType>().apply {
+                title = "Create New Project"
+                initModality(Modality.WINDOW_MODAL)
+                initOwner(projectNameLabel.scene.window)
+            }
+            dialog.dialogPane = dialogPane
+
+            val result = dialog.showAndWait()
+                if (result.isPresent && result.get() == ButtonType.OK) {
+                    val project = controller.getProject()
+                    project?.let { project ->
+                        loadProject(project)
+                    }
+                }
         } catch (e: Exception) {
+            logger.error { e }
             showErrorDialog("Failed to load new project dialog: ${e.message}")
         }
     }
 
-
-
-    @FXML
-    private fun addSample(){
+    @FXML private fun addSample(){
         val files = getFilesFromDialog()
         val fileService = FileService()
 
@@ -241,6 +294,7 @@ class MainController : Initializable {
             selectedFiles.clear()
         }
     }
+
     @FXML private fun importSampleSheet() { logger.info { "Import sample sheet - TODO" } }
     @FXML private fun exportResults() { logger.info { "Export results - TODO" } }
     @FXML private fun refreshResults() { logger.info { "Refresh results - TODO" } }

@@ -1,17 +1,23 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import io.github.antoniodimeglio.biodock.biodock.util.FileSerializer
+import io.github.antoniodimeglio.biodock.biodock.util.LocalDateSerializer
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID
 
-
+@Serializable
 data class Project(
     val id: String = UUID.randomUUID().toString(),
     var name: String,
     var description: String = "",
+    @Serializable(with = LocalDateSerializer::class)
     val createdAt: LocalDateTime = LocalDateTime.now(),
+    @Serializable(with = LocalDateSerializer::class)
     var lastModified: LocalDateTime = LocalDateTime.now(),
     val samples: MutableList<Sample> = mutableListOf(),
+    @Serializable(with = FileSerializer::class)
     var workingDirectory: File? = null,
     var selectedPipeline: String? = null,
 ) {

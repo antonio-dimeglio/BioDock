@@ -5,6 +5,7 @@ import javafx.collections.FXCollections
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.Button
+import javafx.scene.control.ButtonType
 import javafx.scene.control.CheckBox
 import javafx.scene.control.ComboBox
 import javafx.scene.control.DialogPane
@@ -12,6 +13,9 @@ import javafx.scene.control.Label
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
+import javafx.stage.DirectoryChooser
+import javafx.stage.Stage
+import java.io.File
 import java.net.URL
 import java.util.ResourceBundle
 
@@ -127,7 +131,6 @@ class ProjectController : Initializable {
             }
         }
 
-        // Show validation errors
         if (errors.isNotEmpty()) {
             validationLabel.text = errors.joinToString("\n• ", "• ")
             validationBox.isVisible = true
@@ -146,12 +149,6 @@ class ProjectController : Initializable {
             Project(
                 name = projectNameField.text.trim(),
                 description = descriptionArea.text?.trim() ?: "",
-                location = locationField.text.trim(),
-                defaultPipeline = defaultPipelineCombo.value ?: "",
-                sampleFormat = sampleFormatCombo.value ?: "",
-                createSampleSheet = createSampleSheetCheck.isSelected,
-                enableLogging = enableLoggingCheck.isSelected,
-                autoBackup = autoBackupCheck.isSelected
             )
         } else null
     }
