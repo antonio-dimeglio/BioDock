@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/11.0.1"
+            prefWidth="500.0"
+            prefHeight="400.0"
+            styleClass="dialog-pane"
+            fx:controller="io.github.antoniodimeglio.biodock.biodock.controller.NewProjectController">
+
+    <header>
+        <Label text="📊 Create New Project" styleClass="dialog-title"/>
+    </header>
+
+    <content>
+        <VBox spacing="20" styleClass="dialog-content">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <!-- Project Details Section -->
+            <VBox spacing="15">
+                <Label text="Project Details" styleClass="section-header"/>
+
+                <GridPane hgap="10" vgap="15" styleClass="form-grid">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="120" prefWidth="120"/>
+                        <ColumnConstraints minWidth="300" prefWidth="300" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Project Name -->
+                    <Label text="Project Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
+                    <TextField fx:id="projectNameField" promptText="Enter project name..." GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <!-- Description -->
+                    <Label text="Description:" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
+                    <TextArea fx:id="descriptionArea" promptText="Optional project description..."
+                              prefRowCount="3" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                    <!-- Project Location -->
+                    <Label text="Location:" GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="form-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <TextField fx:id="locationField" promptText="Select project directory..." HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="browseButton" text="Browse..." styleClass="secondary-button" onAction="#browseLocation"/>
+                    </HBox>
+                </GridPane>
+            </VBox>
+
+            <Separator/>
+
+            <!-- Analysis Settings Section -->
+            <VBox spacing="15">
+                <Label text="Analysis Settings" styleClass="section-header"/>
+
+                <GridPane hgap="10" vgap="15" styleClass="form-grid">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="120" prefWidth="120"/>
+                        <ColumnConstraints minWidth="300" prefWidth="300" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Default Pipeline -->
+                    <Label text="Default Pipeline:" GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="form-label"/>
+                    <ComboBox fx:id="defaultPipelineCombo" promptText="Select default pipeline..."
+                              prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <!-- Sample Format -->
+                    <Label text="Sample Format:" GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="form-label"/>
+                    <ComboBox fx:id="sampleFormatCombo" promptText="Select sample format..."
+                              prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                </GridPane>
+
+                <!-- Options -->
+                <VBox spacing="10">
+                    <CheckBox fx:id="createSampleSheetCheck" text="Create sample sheet template" selected="true"/>
+                    <CheckBox fx:id="enableLoggingCheck" text="Enable detailed logging" selected="true"/>
+                    <CheckBox fx:id="autoBackupCheck" text="Enable automatic backups"/>
+                </VBox>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- Validation Messages -->
+            <VBox fx:id="validationBox" spacing="5" managed="false" visible="false" styleClass="validation-box">
+                <Label fx:id="validationLabel" styleClass="error-text" wrapText="true"/>
+            </VBox>
+        </VBox>
+    </content>
+
+    <buttonTypes>
+        <ButtonType fx:constant="CANCEL"/>
+        <ButtonType fx:constant="OK"/>
+    </buttonTypes>
+
+</DialogPane>

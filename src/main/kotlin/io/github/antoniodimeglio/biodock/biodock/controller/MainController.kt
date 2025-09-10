@@ -1,5 +1,8 @@
 package io.github.antoniodimeglio.biodock.biodock.controller
 
+import io.github.antoniodimeglio.biodock.biodock.model.Project
+import io.github.antoniodimeglio.biodock.biodock.service.FileService
+import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -11,6 +14,9 @@ import javafx.animation.KeyFrame
 import javafx.animation.Timeline
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
+import javafx.fxml.FXMLLoader
+import javafx.scene.input.TransferMode
+import javafx.stage.DirectoryChooser
 import javafx.util.Duration
 import java.io.File
 import java.net.URL
@@ -19,6 +25,8 @@ import java.util.*
 private val logger = KotlinLogging.logger {}
 
 class MainController : Initializable {
+
+    lateinit var newProjectButton: Button
 
     // Top toolbar
     @FXML private lateinit var pipelineSelector: ComboBox<String>
@@ -77,6 +85,8 @@ class MainController : Initializable {
 
         logArea.appendText("BioDock started successfully\n")
         logArea.appendText("Ready to process samples\n")
+
+        sampleListView.selectionModel.selectionMode = SelectionMode.MULTIPLE
     }
 
     private fun setupEventHandlers() {
@@ -86,21 +96,42 @@ class MainController : Initializable {
         }
 
         runBtn.isDisable = true
+
+        sampleListView.setOnDragOver { event ->
+            if (event.dragboard.hasFiles()) {
+                event.acceptTransferModes(*TransferMode.COPY_OR_MOVE)
+            }
+            event.consume()
+        }
+
+        sampleListView.setOnDragDropped { event ->
+            val db = event.dragboard
+            var success = false
+
+            if (db.hasFiles()) {
+                val fs = FileService()
+                db.files.forEach { file ->
+                    if (!selectedFiles.contains(file) &&
+                        fs.validateFastqFile(file) is ValidationResult.Success){
+                        selectedFiles.add(file)
+                    }
+                }
+            }
+
+            updateUI()
+        }
     }
 
     private fun updateUI() {
         sampleCountLabel.text = selectedFiles.size.toString()
         runBtn.isDisable = selectedFiles.isEmpty()
 
-        // Update sample list
+
         sampleListView.items.clear()
         sampleListView.items.addAll(selectedFiles.map { it.name })
     }
 
-    @FXML
-    private fun handleOpenFile() {
-        logger.info { "Opening file chooser..." }
-
+    private fun getFilesFromDialog(): List<File>? {
         val fileChooser = FileChooser().apply {
             title = "Select FASTQ Files"
             extensionFilters.addAll(
@@ -112,29 +143,16 @@ class MainController : Initializable {
         val stage = openFileBtn.scene.window as Stage
         val files = fileChooser.showOpenMultipleDialog(stage)
 
-        if (files != null) {
-            selectedFiles.addAll(files)
-            updateUI()
-            logArea.appendText("Added ${files.size} files\n")
-            logger.info { "Selected ${files.size} files" }
-        }
+        return files
     }
 
-    @FXML
-    private fun handleRunFastqc() {
-        logger.info { "Starting FastQC analysis..." }
-
-        statusLabel.text = "Running..."
-        overallStatusLabel.text = "Running Analysis"
-        progressBar.progress = 0.2
-        progressLabel.text = "Initializing..."
-
-        logArea.appendText("Starting ${pipelineSelector.value} analysis...\n")
-        logArea.appendText("Processing ${selectedFiles.size} samples\n")
-
-        // TODO: Implement actual FastQC execution in Phase 3
-        // For now, just simulate progress
-        simulateProgress()
+    private fun showErrorDialog(description: String) {
+        val alert = Alert(Alert.AlertType.ERROR).apply {
+            this.title = "Error"
+            headerText = title
+            contentText = description
+        }
+        alert.showAndWait()
     }
 
     private fun simulateProgress() {
@@ -155,9 +173,74 @@ class MainController : Initializable {
         timeline.play()
     }
 
-    // Placeholder methods for future implementation
-    @FXML private fun newProject() { logger.info { "New project - TODO" } }
-    @FXML private fun removeSample() { logger.info { "Remove sample - TODO" } }
+    @FXML private fun newProject() {
+        try {
+            val loader = FXMLLoader(javaClass.getResource("/fxml/project-view.fxml"))
+            val dialogPane = loader.load<DialogPane>()
+
+            val controller = loader.getController<ProjectController>()
+            controller.setDialogPane(dialogPane)
+        } catch (e: Exception) {
+            showErrorDialog("Failed to load new project dialog: ${e.message}")
+        }
+    }
+
+
+
+    @FXML
+    private fun addSample(){
+        val files = getFilesFromDialog()
+        val fileService = FileService()
+
+        if (files != null) {
+            selectedFiles.addAll(
+                files.filter { fileService.validateFastqFile(it) is ValidationResult.Success  &&
+                    !selectedFiles.contains(it)}
+            )
+
+            updateUI()
+            logArea.appendText("Added ${files.size} files\n")
+        }
+    }
+    @FXML private fun removeSample() {
+        val selected = sampleListView.selectionModel.selectedItems.toList()
+
+        if (selected.isEmpty()) return
+
+        val alert = Alert(Alert.AlertType.CONFIRMATION).apply {
+            title = "Confirm Deletion"
+            headerText = "Remove selected samples?"
+            contentText = "Are you sure you want to remove ${selected.size} sample(s)?"
+        }
+
+        val result = alert.showAndWait()
+        if (result.isPresent && result.get() == ButtonType.OK) {
+            sampleListView.items.removeAll(selected)
+            sampleListView.selectionModel.clearSelection()
+
+            selected.forEach { item ->
+                val fileToRemove = selectedFiles.find { it.name == item }
+                if (fileToRemove != null) {
+                    selectedFiles.remove(fileToRemove)
+                }
+            }
+        }
+    }
+    @FXML private fun clearSamples() {
+        val alert = Alert(Alert.AlertType.CONFIRMATION).apply {
+            title = "Confirm Deletion"
+            headerText = "Remove all samples?"
+            contentText = "Are you sure you want to remove all samples?"
+        }
+
+        val result = alert.showAndWait()
+        if (result.isPresent && result.get() == ButtonType.OK) {
+            sampleListView.items.clear()
+            sampleListView.selectionModel.clearSelection()
+
+            selectedFiles.clear()
+        }
+    }
     @FXML private fun importSampleSheet() { logger.info { "Import sample sheet - TODO" } }
     @FXML private fun exportResults() { logger.info { "Export results - TODO" } }
     @FXML private fun refreshResults() { logger.info { "Refresh results - TODO" } }
@@ -165,4 +248,21 @@ class MainController : Initializable {
     @FXML private fun openExternalReport() { logger.info { "Open external report - TODO" } }
     @FXML private fun clearLogs() { logArea.clear() }
     @FXML private fun saveLogs() { logger.info { "Save logs - TODO" } }
+
+    @FXML
+    private fun handleRunFastqc() {
+        logger.info { "Starting FastQC analysis..." }
+
+        statusLabel.text = "Running..."
+        overallStatusLabel.text = "Running Analysis"
+        progressBar.progress = 0.2
+        progressLabel.text = "Initializing..."
+
+        logArea.appendText("Starting ${pipelineSelector.value} analysis...\n")
+        logArea.appendText("Processing ${selectedFiles.size} samples\n")
+
+        // TODO: Implement actual FastQC execution in Phase 3
+        // For now, just simulate progress
+        simulateProgress()
+    }
 }

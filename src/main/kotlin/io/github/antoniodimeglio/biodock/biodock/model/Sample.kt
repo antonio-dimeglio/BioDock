@@ -1,5 +1,7 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import io.github.antoniodimeglio.biodock.biodock.service.FileService
+import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
 import java.io.File
 import java.time.LocalDateTime
 import java.util.UUID.randomUUID
@@ -19,11 +21,25 @@ data class Sample(
     val fileSize: Long = file.length(),
     val addedAt: LocalDateTime = LocalDateTime.now(),
     var status: SampleStatus = SampleStatus.PENDING,
-    var analysisResults: AnalysisResult? = null
+    var analysisResults: AnalysisResult? = null,
+    var isValid: Boolean = false,
+    var validationMessage: String? = null
 ) {
     fun isValidFastq(): Boolean {
-        val validExtension = listOf(".fastq", ".fq","fastq.gz", "fq.gz")
-        return validExtension.any{ file.name.lowercase().endsWith(it) }
+        val fs = FileService()
+
+        return when (val result = fs.validateFastqFile(file)){
+            is ValidationResult.Success -> {
+                isValid = true
+                validationMessage = result.message
+                true
+            }
+            is ValidationResult.Error -> {
+                isValid = false
+                validationMessage = result.message
+                false
+            }
+        }
     }
 
     fun getDisplayName(): String {

@@ -44,29 +44,30 @@
 
                 <Separator orientation="VERTICAL"/>
 
-                <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button" onAction="#handleOpenFile"/>
+<!--                <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button" onAction="#handleOpenFile"/>-->
+                <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button"/>
                 <Button fx:id="runBtn" text="▶ Run Analysis" styleClass="success-button" onAction="#handleRunFastqc"/>
 
-                <Separator orientation="VERTICAL"/>
+            <Separator orientation="VERTICAL"/>
 
-                <Label text="Status:" styleClass="toolbar-label"/>
-                <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
-            </ToolBar>
-        </VBox>
-    </top>
+            <Label text="Status:" styleClass="toolbar-label"/>
+            <Label fx:id="statusLabel" text="Ready" styleClass="status-label"/>
+        </ToolBar>
+    </VBox>
+</top>
 
-    <left>
-        <VBox spacing="10" prefWidth="280" styleClass="sidebar">
-            <padding>
-                <Insets top="10" right="10" bottom="10" left="10"/>
-            </padding>
+<left>
+    <VBox spacing="10" prefWidth="280" styleClass="sidebar">
+        <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+        </padding>
 
-            <!-- Project Section -->
+        <!-- Project Section -->
             <VBox spacing="5">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Label text="📊 Current Project" styleClass="section-header"/>
                     <Region HBox.hgrow="ALWAYS"/>
-                    <Button text="+" styleClass="small-button" onAction="#newProject"/>
+                    <Button fx:id="newProjectButton" text="+" styleClass="small-button" onAction="#newProject"/>
                 </HBox>
                 <Label fx:id="projectNameLabel" text="New Project" styleClass="project-name"/>
             </VBox>
@@ -78,8 +79,9 @@
                 <Label text="📄 Samples" styleClass="section-header"/>
                 <ListView fx:id="sampleListView" prefHeight="300" VBox.vgrow="ALWAYS" styleClass="sample-list"/>
                 <HBox spacing="5">
-                    <Button text="Add Files" prefWidth="120" styleClass="secondary-button" onAction="#handleOpenFile"/>
+                    <Button text="Add Files" prefWidth="100" styleClass="secondary-button" onAction="#addSample"/>
                     <Button text="Remove" prefWidth="80" styleClass="danger-button" onAction="#removeSample"/>
+                    <Button text="Clear" prefWidth="80" styleClass="danger-button" onAction="#clearSamples"/>
                 </HBox>
             </VBox>
 
