@@ -13,7 +13,7 @@ import java.util.zip.GZIPInputStream
 class FileService {
     private val logger = KotlinLogging.logger {}
 
-    private fun isFastqFormatValid(file: File): Boolean {
+    private fun isFastqFormatValid(file: File): ValidationResult {
         return try {
             val reader = if (file.name.endsWith(".gz", ignoreCase = true)) {
                 GZIPInputStream(file.inputStream()).bufferedReader()
@@ -21,18 +21,41 @@ class FileService {
                 file.bufferedReader()
             }
 
-            val lines = reader.lineSequence().take(4).toList()
-            reader.close()
+            reader.use { r ->
+                val lines = r.lineSequence().take(4).toList()
+                if (lines.size < 4) return ValidationResult.Error("Invalid FastQ format, file contains less than 4 lines.")
 
-            if (lines.size < 4) return false
+                // If every other check passes, the final step makes sure that
+                // the data in the file actually follows the fastq definition
+                // i.e. only nucleotides are present and that only ASCII values
+                // in the range [33, 126] are
 
-            lines[0].startsWith("@") &&
-                    lines[2].startsWith("+") &&
-                    lines[1].isNotEmpty() &&
-                    lines[3].isNotEmpty()
+                val validNucleotides = setOf('A', 'T', 'G', 'C', 'N', 'a', 't', 'g', 'c', 'n')
 
+                return when {
+                    !lines[0].startsWith("@") ->
+                        ValidationResult.Error("Invalid header line: must start with '@'")
+
+                    !lines[2].startsWith("+") ->
+                        ValidationResult.Error("Invalid separator line: must start with '+'")
+
+                    lines[1].isEmpty() || lines[3].isEmpty() ->
+                        ValidationResult.Error("Sequence or quality line is empty")
+
+                    lines[1].length != lines[3].length ->
+                        ValidationResult.Error("Sequence and quality lines have different lengths")
+
+                    !lines[1].all { it in validNucleotides } ->
+                        ValidationResult.Error("Invalid nucleotide characters in sequence")
+
+                    !lines[3].all { it.code in 33..126 } ->
+                        ValidationResult.Error("Invalid quality score characters")
+
+                    else -> ValidationResult.Success("Valid FASTQ format")
+                }
+            }
         } catch (e: Exception) {
-            false
+            ValidationResult.Error("Failed to read Fastq file: ${e.message}")
         }
     }
 
@@ -42,9 +65,8 @@ class FileService {
             !file.canRead() -> ValidationResult.Error("Cannot read file")
             file.length() == 0L -> ValidationResult.Error("File is empty")
             !file.name.matches(Regex(".*\\.(fastq|fq)(\\.gz)?$")) ->
-                ValidationResult.Error("Not a FASTQ file")
-            !isFastqFormatValid(file) -> ValidationResult.Error("FASTQ file formatting is invalid")
-            else -> ValidationResult.Success("Valid FASTQ file")
+                ValidationResult.Error("File has incorrect extension")
+            else -> isFastqFormatValid(file)
         }
     }
 
@@ -74,11 +96,17 @@ class FileService {
         if (!project.workingDirectory.exists())
             throw FileNotFoundException("Could not find project ${project.workingDirectory.name}")
 
-        return source.copyTo(project.workingDirectory)
+        val destFile = File(project.workingDirectory, source.name)
+        return source.copyTo(destFile, overwrite = true)
     }
 
-    fun cleanupWorkspace(project: Project){}
+    fun cleanupProject(project: Project){
+        val projectFolder = project.workingDirectory
+        if (!projectFolder.exists())
+            throw FileNotFoundException("Could not find file ${projectFolder.name}")
 
+        projectFolder.deleteRecursively()
+    }
 }
 
 sealed class ValidationResult {
