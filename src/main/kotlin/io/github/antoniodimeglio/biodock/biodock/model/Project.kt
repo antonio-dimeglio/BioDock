@@ -45,12 +45,16 @@ data class Project(
     fun getFailedSamples(): List<Sample> =
         samples.filter { it.status == SampleStatus.FAILED }
 
+    fun getCancelledSamples(): List<Sample> =
+        samples.filter {it.status == SampleStatus.CANCELLED }
+
     fun getOverallStatus(): String {
         return when {
             samples.isEmpty() -> "Empty"
-            getRunningSamples().isNotEmpty() -> "Running"
             getFailedSamples().isNotEmpty() -> "Some Failed"
-            getPendingSamples().isNotEmpty() -> "Ready"
+            getRunningSamples().isNotEmpty() -> "Running"
+            getPendingSamples().isNotEmpty() -> "Pending"
+            getCancelledSamples().size == samples.size -> "Cancelled"
             else -> "Complete"
         }
     }
