@@ -18,8 +18,8 @@ data class Project(
     var lastModified: LocalDateTime = LocalDateTime.now(),
     val samples: MutableList<Sample> = mutableListOf(),
     @Serializable(with = FileSerializer::class)
-    var workingDirectory: File? = null,
-    var selectedPipeline: String? = null,
+    var workingDirectory: File = File("/BioDockProjects/NewProject/"),
+    var selectedPipeline: String = "",
 ) {
     fun addSample(sample: Sample) {
         samples.add(sample)

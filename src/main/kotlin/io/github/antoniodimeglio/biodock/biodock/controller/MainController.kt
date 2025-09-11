@@ -3,6 +3,7 @@ package io.github.antoniodimeglio.biodock.biodock.controller
 
 import io.github.antoniodimeglio.biodock.biodock.model.Project
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
+import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
 import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -25,6 +26,9 @@ import javafx.util.Duration
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.net.URL
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 
 private val logger = KotlinLogging.logger {}
@@ -62,8 +66,8 @@ class MainController : Initializable {
 
     private val selectedFiles = mutableListOf<File>()
     private var currentProject = Project(
-        name = "New Project",
-        workingDirectory = File("/BioDockProjects/NewProject/"))
+        name = "NewProject",
+    )
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         setupUI()
@@ -72,10 +76,10 @@ class MainController : Initializable {
     }
 
     private fun setupUI() {
+        val availablePipelines = PipelineService().getAvailablePipelines()
+
         pipelineSelector.items.addAll(
-            "FastQC Only",
-            "RNA-seq Quick QC",
-            "Variant Calling QC"
+            availablePipelines.map { it.name }
         )
         pipelineSelector.selectionModel.selectFirst()
 
@@ -205,13 +209,31 @@ class MainController : Initializable {
         if (currentProject.selectedPipeline?.isNotEmpty() == true){
             pipelineSelector.value = currentProject.selectedPipeline
         }
-
-
     }
 
     @FXML private fun saveProject(){
-        logger.info { Json.encodeToString(currentProject)}
+        try {
+            val wd = currentProject.workingDirectory.path
 
+            if (Files.exists(Paths.get(wd))) {
+                val alert = Alert(Alert.AlertType.CONFIRMATION).apply {
+                    title = "Overwriting Project"
+                    headerText = "Overwrite Project Directory?"
+                    contentText = "Are you sure you want to overwrite the working directory for the project?"
+                }
+
+                val result = alert.showAndWait()
+                if (result.orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                    return
+                }
+            }
+
+            val fs = FileService()
+            fs.saveProjectDirectory(currentProject)
+
+        } catch (e: Exception) {
+            showErrorDialog("Error when trying to save the project: ${e.message}")
+        }
     }
     @FXML private fun newProject() {
         try {

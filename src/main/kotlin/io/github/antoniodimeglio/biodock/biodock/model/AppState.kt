@@ -1,10 +1,11 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
 import javafx.beans.property.*
 import javafx.collections.FXCollections
 
 class AppState {
-    val currentProject = SimpleObjectProperty<Project>(Project(name = "New Project"))
+    val currentProject = SimpleObjectProperty<Project>(Project(name = "New Project", selectedPipeline = ""))
     val selectedSamples = SimpleListProperty<Sample>(FXCollections.observableArrayList())
     val selectedPipeline = SimpleObjectProperty<Pipeline>()
     val isAnalysisRunning = SimpleBooleanProperty(false)
@@ -13,7 +14,7 @@ class AppState {
     val dockerStatus = SimpleStringProperty("Checking...")
 
     val availablePipelines = SimpleListProperty<Pipeline>(
-        javafx.collections.FXCollections.observableList(Pipeline.getDefaultPipelines())
+        FXCollections.observableList(PipelineService().getAvailablePipelines())
     )
 
     init {
@@ -21,7 +22,7 @@ class AppState {
     }
 
     fun reset() {
-        currentProject.set(Project(name = "New Project"))
+        currentProject.set(Project(name = "New Project", selectedPipeline = ""))
         selectedSamples.clear()
         selectedPipeline.set(availablePipelines.first())
         isAnalysisRunning.set(false)

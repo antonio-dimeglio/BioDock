@@ -143,12 +143,13 @@ class ProjectController : Initializable {
         }
     }
 
-    // Getters for the main controller to access the form data
     fun getProject(): Project? {
         return if (validateForm()) {
             Project(
                 name = projectNameField.text.trim(),
                 description = descriptionArea.text?.trim() ?: "",
+                selectedPipeline = defaultPipelineCombo.selectionModel.selectedItem.toString(),
+                workingDirectory = File(locationField.text)
             )
         } else null
     }

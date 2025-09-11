@@ -1,8 +1,13 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
+import io.github.antoniodimeglio.biodock.biodock.model.Project
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileNotFoundException
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import java.util.zip.GZIPInputStream
 
 class FileService {
@@ -47,19 +52,32 @@ class FileService {
         return file.nameWithoutExtension
     }
 
-    fun createWorkspaceDirectory(projectName: String){}
+    fun saveProjectDirectory(project: Project){
+        val path = Paths.get(project.workingDirectory.path)
+        Files.createDirectories(path)
 
-    fun copyFileToWorkspace(source: File, workspace: File): File {
+        val json = Json.encodeToString(project)
+        val filePath = path.resolve("project.json")
+
+        Files.writeString(
+            filePath,
+            json,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        )
+    }
+
+    fun copyFileToProject(source: File, project: Project): File {
         if (!source.exists())
             throw FileNotFoundException("Could not find file ${source.name}")
 
-        if (!workspace.exists())
-            throw FileNotFoundException("Could not find workspace ${workspace.name}")
+        if (!project.workingDirectory.exists())
+            throw FileNotFoundException("Could not find project ${project.workingDirectory.name}")
 
-        return source.copyTo(workspace)
+        return source.copyTo(project.workingDirectory)
     }
 
-    fun cleanupWorkspace(workspaceDir: File){}
+    fun cleanupWorkspace(project: Project){}
 
 }
 
