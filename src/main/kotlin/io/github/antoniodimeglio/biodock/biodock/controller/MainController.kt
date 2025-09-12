@@ -2,6 +2,7 @@ package io.github.antoniodimeglio.biodock.biodock.controller
 
 
 import io.github.antoniodimeglio.biodock.biodock.model.Project
+import io.github.antoniodimeglio.biodock.biodock.service.DockerService
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
 import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
 import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
@@ -23,11 +24,14 @@ import javafx.scene.input.TransferMode
 import javafx.scene.layout.BorderPane
 import javafx.stage.Modality
 import javafx.util.Duration
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URL
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
@@ -68,6 +72,8 @@ class MainController : Initializable {
     private var currentProject = Project(
         name = "NewProject",
     )
+    private val uiScope = CoroutineScope(Dispatchers.Unconfined + SupervisorJob())
+    private val dockerService = DockerService()
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         setupUI()
@@ -87,7 +93,6 @@ class MainController : Initializable {
         statusLabel.text = "Ready"
         overallStatusLabel.text = "Ready"
         selectedPipelineLabel.text = pipelineSelector.value
-        dockerStatusLabel.text = "Docker: Checking..."
         versionLabel.text = "BioDock v1.0.0"
 
         progressBar.progress = 0.0
@@ -97,7 +102,14 @@ class MainController : Initializable {
         logArea.appendText("Ready to process samples\n")
 
         sampleListView.selectionModel.selectionMode = SelectionMode.MULTIPLE
+    }
 
+    private fun updateDockerStatus() {
+        uiScope.launch {
+            val status = withContext(Dispatchers.IO) { dockerService.getDockerStatus() }
+            Platform.runLater { dockerStatusLabel.text = "Docker: $status" }
+
+        }
     }
 
     private fun setupEventHandlers() {
@@ -144,7 +156,6 @@ class MainController : Initializable {
                 KeyCombination.keyCombination("Ctrl+S")
             }
 
-            // Register the accelerator
             scene.accelerators[saveKey] = Runnable { saveProject() }
         }
     }
@@ -156,7 +167,7 @@ class MainController : Initializable {
 
         sampleListView.items.clear()
         sampleListView.items.addAll(selectedFiles.map { it.name })
-
+        updateDockerStatus()
     }
 
     private fun getFilesFromDialog(): List<File>? {

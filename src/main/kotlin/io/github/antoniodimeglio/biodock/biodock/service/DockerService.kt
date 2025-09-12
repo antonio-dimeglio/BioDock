@@ -1,43 +1,42 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
-object DockerService {
+import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
+import io.github.antoniodimeglio.biodock.biodock.util.CommandExecutor
+import io.github.antoniodimeglio.biodock.biodock.util.DefaultCommandExecutor
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.slf4j.Logger
+
+fun runContainer(pipeline: Pipeline) {
+
 }
+class DockerService(private val commandExecutor: CommandExecutor = DefaultCommandExecutor()) {
+    private val logger = KotlinLogging.logger {}
 
-/*
-example from older code
-
-    fun runFastqc(
-        fastqPath: String,
-        onLog: (String) -> Unit,
-        onDone: (String) -> Unit
-    ) {
-        try {
-            val processBuilder = ProcessBuilder(
-                "docker", "run", "--rm",
-                "-v", "${fastqPath}:/data/input.fastq",
-                "-v", "${System.getProperty("user.dir")}:/data/output",
-                "biocontainers/fastqc:v0.11.9_cv8",
-                "fastqc", "/data/input.fastq", "-o", "/data/output"
-            )
-            processBuilder.redirectErrorStream(true)
-            val process = processBuilder.start()
-
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                onLog(line!!)
+    suspend fun getDockerStatus(): DockerStatus {
+        return try {
+            val versionStatus = commandExecutor.execute("docker", "--version")
+            if (versionStatus.exitCode != 0) {
+                return DockerStatus.NOT_INSTALLED
             }
 
-            val exitCode = process.waitFor()
-            if (exitCode == 0) {
-                val reportPath = "${System.getProperty("user.dir")}/input_fastqc.html"
-                onDone(reportPath)
+            val infoStatus = commandExecutor.execute("docker", "info")
+
+            if (infoStatus.exitCode == 0) {
+                DockerStatus.RUNNING
             } else {
-                onLog("FastQC failed with exit code $exitCode")
+                DockerStatus.NOT_RUNNING
             }
-
         } catch (e: Exception) {
-            onLog("Error running FastQC: ${e.message}")
+            logger.warn { "Error checking Docker status: ${e.message}" }
+            DockerStatus.ERROR
         }
     }
- */
+}
+
+
+enum class DockerStatus {
+    NOT_INSTALLED,
+    NOT_RUNNING,
+    RUNNING,
+    ERROR
+}
