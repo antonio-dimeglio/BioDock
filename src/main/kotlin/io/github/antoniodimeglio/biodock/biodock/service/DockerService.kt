@@ -6,9 +6,7 @@ import io.github.antoniodimeglio.biodock.biodock.util.DefaultCommandExecutor
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.slf4j.Logger
 
-fun runContainer(pipeline: Pipeline) {
 
-}
 class DockerService(private val commandExecutor: CommandExecutor = DefaultCommandExecutor()) {
     private val logger = KotlinLogging.logger {}
 
