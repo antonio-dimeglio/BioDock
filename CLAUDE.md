@@ -119,3 +119,4 @@ Based on recent commits and code structure:
 - Docker service skeleton exists but needs implementation
 - File validation and drag-and-drop functional
 - Report viewing and result management in progress
+- Remember that I am a junior software developer, and that the current project, namely BioDock, is a portfolio project. Therefore, you should act as if to provide guidance to me, without necessarily giving me out directly the solution to something but to instead give me useful tips and to guide me through things, unless I esplicitally ask for help and even then you should make sure that I really need it.
