@@ -76,7 +76,7 @@ class MainController : Initializable {
     }
 
     private fun setupUI() {
-        val availablePipelines = PipelineService().getAvailablePipelines()
+        val availablePipelines = PipelineService.getAvailablePipelines()
 
         pipelineSelector.items.addAll(
             availablePipelines.map { it.name }
@@ -120,10 +120,9 @@ class MainController : Initializable {
             var success = false
 
             if (db.hasFiles()) {
-                val fs = FileService()
                 db.files.forEach { file ->
                     if (!selectedFiles.contains(file) &&
-                        fs.validateFastqFile(file) is ValidationResult.Success){
+                        FileService.validateFastqFile(file) is ValidationResult.Success){
                         selectedFiles.add(file)
                     }
                 }
@@ -228,8 +227,7 @@ class MainController : Initializable {
                 }
             }
 
-            val fs = FileService()
-            fs.saveProjectDirectory(currentProject)
+            FileService.saveProjectDirectory(currentProject)
 
         } catch (e: Exception) {
             showErrorDialog("Error when trying to save the project: ${e.message}")
@@ -265,11 +263,10 @@ class MainController : Initializable {
 
     @FXML private fun addSample(){
         val files = getFilesFromDialog()
-        val fileService = FileService()
 
         if (files != null) {
             selectedFiles.addAll(
-                files.filter { fileService.validateFastqFile(it) is ValidationResult.Success  &&
+                files.filter { FileService.validateFastqFile(it) is ValidationResult.Success  &&
                     !selectedFiles.contains(it)}
             )
 

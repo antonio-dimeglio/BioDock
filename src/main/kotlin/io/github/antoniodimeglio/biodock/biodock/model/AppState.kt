@@ -14,7 +14,7 @@ class AppState {
     val dockerStatus = SimpleStringProperty("Checking...")
 
     val availablePipelines = SimpleListProperty<Pipeline>(
-        FXCollections.observableList(PipelineService().getAvailablePipelines())
+        FXCollections.observableList(PipelineService.getAvailablePipelines())
     )
 
     init {

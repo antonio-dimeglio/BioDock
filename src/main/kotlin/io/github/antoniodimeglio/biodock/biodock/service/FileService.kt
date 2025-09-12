@@ -10,7 +10,7 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.zip.GZIPInputStream
 
-class FileService {
+object FileService {
     private val logger = KotlinLogging.logger {}
 
     private fun isFastqFormatValid(file: File): ValidationResult {
@@ -106,6 +106,17 @@ class FileService {
             throw FileNotFoundException("Could not find file ${projectFolder.name}")
 
         projectFolder.deleteRecursively()
+    }
+
+     fun listSubdirectories(path: String): List<File> {
+        val dir = Paths.get(path)
+        if (!Files.isDirectory(dir)) return emptyList()
+
+        return Files.list(dir).use { stream ->
+            stream.filter { Files.isDirectory(it) }
+                .map { it.toFile() }
+                .toList()
+        }
     }
 }
 

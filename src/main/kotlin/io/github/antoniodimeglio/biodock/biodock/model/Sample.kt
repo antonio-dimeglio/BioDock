@@ -33,9 +33,7 @@ data class Sample(
     var validationMessage: String? = null
 ) {
     fun isValidFastq(): Boolean {
-        val fs = FileService()
-
-        return when (val result = fs.validateFastqFile(file)){
+        return when (val result = FileService.validateFastqFile(file)){
             is ValidationResult.Success -> {
                 isValid = true
                 validationMessage = result.message
