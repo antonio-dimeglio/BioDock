@@ -1,5 +1,6 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
+import io.github.antoniodimeglio.biodock.biodock.model.ContainerInfo
 import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
 import io.github.antoniodimeglio.biodock.biodock.util.CommandExecutor
 import io.github.antoniodimeglio.biodock.biodock.util.DefaultCommandExecutor
@@ -28,6 +29,18 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
             logger.warn { "Error checking Docker status: ${e.message}" }
             DockerStatus.ERROR
         }
+    }
+
+    suspend fun runPipeline(
+        pipeline: Pipeline,
+        hostInputPath: String,
+        hostOutputPath: String): Boolean {
+
+        TODO()
+    }
+
+    suspend fun fetchContainerStatus(pipeline: Pipeline): ContainerInfo {
+        TODO()
     }
 }
 
