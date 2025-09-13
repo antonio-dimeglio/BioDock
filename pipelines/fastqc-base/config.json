@@ -2,7 +2,7 @@
   "id": "fastqc-base",
   "name": "FastQC",
   "description": "The base pipeline for fastQC.",
-  "command": ["sh", "-c","fastqc", "--noextract", "--outdir=/results", "/data/*.fastq"],
+  "command": ["fastqc", "--outdir=/results", "/data/*.fastq"],
   "version": "1.0.0",
   "inputFileTypes": ["fastq", "fq", "fastq.gz", "fq.gz"]
 }
