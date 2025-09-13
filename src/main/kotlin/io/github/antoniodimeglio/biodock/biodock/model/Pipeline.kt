@@ -10,7 +10,4 @@ data class Pipeline(
     val command: List<String>,
     val version: String,
     val inputFileTypes: List<String>,
-    val outputFileTypes: List<String>,
-    val inputDirectory: String,
-    val outputDirectory: String
 )

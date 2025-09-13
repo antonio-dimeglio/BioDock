@@ -4,8 +4,9 @@ import io.github.antoniodimeglio.biodock.biodock.model.ContainerInfo
 import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
 import io.github.antoniodimeglio.biodock.biodock.util.CommandExecutor
 import io.github.antoniodimeglio.biodock.biodock.util.DefaultCommandExecutor
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.slf4j.Logger
+import kotlin.io.path.Path
 
 
 class DockerService(private val commandExecutor: CommandExecutor = DefaultCommandExecutor()) {
@@ -34,7 +35,28 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
     suspend fun runPipeline(
         pipeline: Pipeline,
         hostInputPath: String,
-        hostOutputPath: String): Boolean {
+        hostOutputPath: String): Result {
+        val commandExecutor = DefaultCommandExecutor()
+        val dockerFilePath = Path("pipelines").resolve(pipeline.id)
+
+        val buildResult = commandExecutor.execute(
+            "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
+        )
+
+        logger.info { buildResult }
+
+        if (buildResult.exitCode != 0){
+            return Result.Error("Failed to build docker image: ${buildResult.error}")
+        }
+
+        val runResult = commandExecutor.execute(
+            "docker", "run",
+            "--rm",
+            "v", "$hostInputPath:/data/input",
+            "v", "$hostOutputPath:/data/output",
+            "biodock/$pipeline.id",
+            *pipeline.command.toTypedArray()
+        )
 
         TODO()
     }

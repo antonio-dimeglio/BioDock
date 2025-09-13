@@ -1,6 +1,7 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
 import io.github.antoniodimeglio.biodock.biodock.model.Project
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -10,10 +11,11 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.zip.GZIPInputStream
 
+
 object FileService {
     private val logger = KotlinLogging.logger {}
 
-    private fun isFastqFormatValid(file: File): ValidationResult {
+    private fun isFastqFormatValid(file: File): Result {
         return try {
             val reader = if (file.name.endsWith(".gz", ignoreCase = true)) {
                 GZIPInputStream(file.inputStream()).bufferedReader()
@@ -23,7 +25,7 @@ object FileService {
 
             reader.use { r ->
                 val lines = r.lineSequence().take(4).toList()
-                if (lines.size < 4) return ValidationResult.Error("Invalid FastQ format, file contains less than 4 lines.")
+                if (lines.size < 4) return Result.Error("Invalid FastQ format, file contains less than 4 lines.")
 
                 // If every other check passes, the final step makes sure that
                 // the data in the file actually follows the fastq definition
@@ -34,38 +36,38 @@ object FileService {
 
                 return when {
                     !lines[0].startsWith("@") ->
-                        ValidationResult.Error("Invalid header line: must start with '@'")
+                        Result.Error("Invalid header line: must start with '@'")
 
                     !lines[2].startsWith("+") ->
-                        ValidationResult.Error("Invalid separator line: must start with '+'")
+                        Result.Error("Invalid separator line: must start with '+'")
 
                     lines[1].isEmpty() || lines[3].isEmpty() ->
-                        ValidationResult.Error("Sequence or quality line is empty")
+                        Result.Error("Sequence or quality line is empty")
 
                     lines[1].length != lines[3].length ->
-                        ValidationResult.Error("Sequence and quality lines have different lengths")
+                        Result.Error("Sequence and quality lines have different lengths")
 
                     !lines[1].all { it in validNucleotides } ->
-                        ValidationResult.Error("Invalid nucleotide characters in sequence")
+                        Result.Error("Invalid nucleotide characters in sequence")
 
                     !lines[3].all { it.code in 33..126 } ->
-                        ValidationResult.Error("Invalid quality score characters")
+                        Result.Error("Invalid quality score characters")
 
-                    else -> ValidationResult.Success("Valid FASTQ format")
+                    else -> Result.Success("Valid FASTQ format")
                 }
             }
         } catch (e: Exception) {
-            ValidationResult.Error("Failed to read Fastq file: ${e.message}")
+            Result.Error("Failed to read Fastq file: ${e.message}")
         }
     }
 
-    fun validateFastqFile(file: File): ValidationResult {
+    fun validateFastqFile(file: File): Result {
         return when {
-            !file.exists() -> ValidationResult.Error("File does not exist")
-            !file.canRead() -> ValidationResult.Error("Cannot read file")
-            file.length() == 0L -> ValidationResult.Error("File is empty")
+            !file.exists() -> Result.Error("File does not exist")
+            !file.canRead() -> Result.Error("Cannot read file")
+            file.length() == 0L -> Result.Error("File is empty")
             !file.name.matches(Regex(".*\\.(fastq|fq)(\\.gz)?$")) ->
-                ValidationResult.Error("File has incorrect extension")
+                Result.Error("File has incorrect extension")
             else -> isFastqFormatValid(file)
         }
     }
@@ -118,9 +120,4 @@ object FileService {
                 .toList()
         }
     }
-}
-
-sealed class ValidationResult {
-    data class Success(val message: String) : ValidationResult()
-    data class Error(val message: String) : ValidationResult()
 }

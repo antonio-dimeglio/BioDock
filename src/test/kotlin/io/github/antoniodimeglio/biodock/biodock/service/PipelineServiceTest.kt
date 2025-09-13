@@ -2,6 +2,7 @@ package io.github.antoniodimeglio.biodock.biodock.service
 
 
 import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -19,10 +20,7 @@ class PipelineServiceTest {
         description="The base pipeline for fastQC.",
         command=listOf("fastqc", "--outdir=/data/output", "/data/input/*.fastq"),
         version="1.0.0",
-        inputFileTypes = listOf("fastq", "fq", "fastq.gz", "fq.gz"),
-        outputFileTypes = listOf("html", "zip"),
-        inputDirectory = "/data/input",
-        outputDirectory = "/data/output")
+        inputFileTypes = listOf("fastq", "fq", "fastq.gz", "fq.gz"))
 
     val mockPipeline = Pipeline(
         id="mockPipeline",
@@ -30,10 +28,7 @@ class PipelineServiceTest {
         description="mockPipeline",
         command=listOf(),
         version="1.0.0",
-        inputFileTypes = listOf(),
-        outputFileTypes = listOf(),
-        inputDirectory = "",
-        outputDirectory = "")
+        inputFileTypes = listOf())
 
     @Test
     fun `getAvailablePipelines should return all available pipelines`() {
@@ -94,7 +89,7 @@ class PipelineServiceTest {
         try {
             val result = PipelineService.savePipeline(mockPipeline, tempDockerFile.toString(),
                 "$tempPipelineDir/")
-            assertEquals(ValidationResult.Success("Successfully saved pipeline."), result)
+            assertEquals(Result.Success("Successfully saved pipeline."), result)
 
             val savedPipelines = PipelineService.getAvailablePipelines("$tempPipelineDir/")
             assertEquals(listOf(mockPipeline), savedPipelines)
@@ -109,7 +104,7 @@ class PipelineServiceTest {
         val tempPipelineDir = Files.createTempDirectory("test-pipelines")
 
         try {
-            val expected = ValidationResult.Error("Dockerfile not found at nonexistentfile")
+            val expected = Result.Error("Dockerfile not found at nonexistentfile")
             val result = PipelineService.savePipeline(mockPipeline, "nonexistentfile", "$tempPipelineDir/")
             assertEquals(expected, result)
         } finally {
@@ -150,7 +145,7 @@ class PipelineServiceTest {
             PipelineService.savePipeline(mockPipeline, tempDockerFile.toString(), "$tempPipelineDir/")
 
             val result = PipelineService.validatePipeline(mockPipeline, "$tempPipelineDir/")
-            assertEquals(ValidationResult.Success("Valid pipeline."), result)
+            assertEquals(Result.Success("Valid pipeline."), result)
         } finally {
             tempPipelineDir.deleteRecursively()
             tempDockerFile.deleteIfExists()
