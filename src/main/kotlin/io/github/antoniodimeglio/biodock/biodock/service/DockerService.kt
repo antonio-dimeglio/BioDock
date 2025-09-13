@@ -36,29 +36,34 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         pipeline: Pipeline,
         hostInputPath: String,
         hostOutputPath: String): Result {
-        val commandExecutor = DefaultCommandExecutor()
         val dockerFilePath = Path("pipelines").resolve(pipeline.id)
 
-        val buildResult = commandExecutor.execute(
+        val buildResult = this.commandExecutor.execute(
             "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
         )
 
-        logger.info { buildResult }
+//        logger.info { buildResult }
 
         if (buildResult.exitCode != 0){
             return Result.Error("Failed to build docker image: ${buildResult.error}")
         }
 
-        val runResult = commandExecutor.execute(
-            "docker", "run",
-            "--rm",
-            "v", "$hostInputPath:/data/input",
-            "v", "$hostOutputPath:/data/output",
-            "biodock/$pipeline.id",
+
+        val runResult = this.commandExecutor.execute(
+            "docker", "run", "--rm",
+            "-v", "$hostInputPath:/data",
+            "-v", "$hostOutputPath:/results",
+            "biodock/${pipeline.id}",
             *pipeline.command.toTypedArray()
         )
 
-        TODO()
+        logger.info { pipeline.command }
+
+        return if (runResult.exitCode != 0 ) {
+            Result.Error("Failed to run pipeline: ${runResult.error}")
+        } else {
+            Result.Success("Successfully ran pipeline: ${pipeline.name}")
+        }
     }
 
     suspend fun fetchContainerStatus(pipeline: Pipeline): ContainerInfo {
