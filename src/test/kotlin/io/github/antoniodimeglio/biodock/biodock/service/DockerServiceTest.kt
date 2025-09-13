@@ -1,12 +1,11 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
-import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.slf4j.Logger
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.pathString
 
 class DockerServiceTest {
@@ -32,14 +31,19 @@ class DockerServiceTest {
             tempOutputFolder.pathString
         )
 
-        val logger = KotlinLogging.logger {}
+        assertTrue(result is Result.Success, "Pipeline execution should succeed")
 
-        logger.info {
-            """
-                Got result: $result
-                Files found: ${tempOutputFolder.listDirectoryEntries()}
-            """.trimIndent()
-        }
+        val expectedHtmlFile = tempOutputFolder.resolve("temp_fastqc.html")
+        val expectedZipFile = tempOutputFolder.resolve("temp_fastqc.zip")
+
+        assertTrue(Files.exists(expectedHtmlFile), "FastQC HTML report should be generated: $expectedHtmlFile")
+        assertTrue(Files.exists(expectedZipFile), "FastQC ZIP file should be generated: $expectedZipFile")
+
+        assertTrue(Files.size(expectedHtmlFile) > 0, "HTML report should not be empty")
+        assertTrue(Files.size(expectedZipFile) > 0, "ZIP file should not be empty")
+
+        tempInputFolder.toFile().deleteRecursively()
+        tempOutputFolder.toFile().deleteRecursively()
     }
 
     // Build Failure Cases

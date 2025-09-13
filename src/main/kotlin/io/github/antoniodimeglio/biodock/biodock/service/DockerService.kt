@@ -6,6 +6,8 @@ import io.github.antoniodimeglio.biodock.biodock.util.CommandExecutor
 import io.github.antoniodimeglio.biodock.biodock.util.DefaultCommandExecutor
 import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.io.File
+import kotlin.collections.emptyList
 import kotlin.io.path.Path
 
 
@@ -35,29 +37,29 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
     suspend fun runPipeline(
         pipeline: Pipeline,
         hostInputPath: String,
-        hostOutputPath: String): Result {
-        val dockerFilePath = Path("pipelines").resolve(pipeline.id)
+        hostOutputPath: String,
+        buildImage: Boolean = false): Result {
 
-        val buildResult = this.commandExecutor.execute(
-            "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
-        )
+        if (buildImage){
+            val dockerFilePath = Path("pipelines").resolve(pipeline.id)
+            val buildResult = this.commandExecutor.execute(
+                "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
+            )
 
-//        logger.info { buildResult }
-
-        if (buildResult.exitCode != 0){
-            return Result.Error("Failed to build docker image: ${buildResult.error}")
+            if (buildResult.exitCode != 0){
+                return Result.Error("Failed to build docker image: ${buildResult.error}")
+            }
         }
 
+        val expandedCommand = expandGlobs(pipeline.command, hostInputPath)
 
         val runResult = this.commandExecutor.execute(
             "docker", "run", "--rm",
             "-v", "$hostInputPath:/data",
             "-v", "$hostOutputPath:/results",
             "biodock/${pipeline.id}",
-            *pipeline.command.toTypedArray()
+            *expandedCommand.toTypedArray()
         )
-
-        logger.info { pipeline.command }
 
         return if (runResult.exitCode != 0 ) {
             Result.Error("Failed to run pipeline: ${runResult.error}")
@@ -68,6 +70,38 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
 
     suspend fun fetchContainerStatus(pipeline: Pipeline): ContainerInfo {
         TODO()
+    }
+
+    private fun expandGlobs(command: List<String>, hostInputPath: String): List<String> {
+        return command.flatMap { arg ->
+            if (arg.contains("*")) {
+                expandSingleGlob(arg, hostInputPath)
+            } else {
+                listOf(arg)
+            }
+        }
+    }
+
+    private fun expandSingleGlob(globPattern: String, hostInputPath: String): List<String> {
+        // Extract the directory and pattern from the glob
+        // e.g., "/data/*.fastq" -> directory="/data", pattern="*.fastq"
+        val parts = globPattern.split("/")
+        val pattern = parts.last()
+        val prefix = parts.dropLast(1).joinToString("/")
+
+        if (pattern.contains("*")) {
+            // Convert glob pattern to regex
+            val regex = pattern.replace("*", ".*").toRegex()
+
+            val matchingFiles = File(hostInputPath).listFiles()
+                ?.filter { regex.matches(it.name) }
+                ?.map { if (prefix.isNotEmpty()) "$prefix/${it.name}" else it.name }
+                ?: emptyList()
+
+            return matchingFiles.ifEmpty { listOf(globPattern) }
+        }
+
+        return listOf(globPattern)
     }
 }
 
