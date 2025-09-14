@@ -1,37 +1,40 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
 import io.github.antoniodimeglio.biodock.biodock.util.Result
+import io.github.antoniodimeglio.biodock.biodock.util.StringGenerators
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import kotlin.io.path.pathString
+import kotlin.io.path.writeText
 
 class DockerServiceTest {
 
     val dockerService = DockerService()
-    @Test
-    fun `runPipeline should return success when both build and run succeed`() = runTest {
-        val urlFastq = "https://zenodo.org/records/3736457/files/1_control_psbA3_2019_minq7.fastq"
 
+    // Complete Pipeline Workflow Tests
+    @Test
+    fun `complete pipeline workflow should succeed when both build and run succeed`() = runTest {
         val tempInputFolder = Files.createTempDirectory("data")
         val tempOutputFolder = Files.createTempDirectory("results")
 
         val targetFile = tempInputFolder.resolve("temp.fastq")
-
-        java.net.URI(urlFastq).toURL().openStream().use { input ->
-            Files.copy(input, targetFile, StandardCopyOption.REPLACE_EXISTING)
-        }
+        targetFile.writeText(StringGenerators.generateSyntheticFastq())
 
         val pipeline = PipelineService.getAvailablePipelines().first() // Assuming that the first is fastqc-base
-        val result = dockerService.runPipeline(
+
+        // Test build step
+        val buildResult = dockerService.buildDockerImage(pipeline)
+        assertTrue(buildResult is Result.Success, "Docker build should succeed")
+
+        // Test run step
+        val runResult = dockerService.runPipeline(
             pipeline,
             tempInputFolder.pathString,
             tempOutputFolder.pathString
         )
-
-        assertTrue(result is Result.Success, "Pipeline execution should succeed")
+        assertTrue(runResult is Result.Success, "Pipeline execution should succeed")
 
         val expectedHtmlFile = tempOutputFolder.resolve("temp_fastqc.html")
         val expectedZipFile = tempOutputFolder.resolve("temp_fastqc.zip")
@@ -46,31 +49,38 @@ class DockerServiceTest {
         tempOutputFolder.toFile().deleteRecursively()
     }
 
-    // Build Failure Cases
+    // Build Tests
     @Test
-    fun `runPipeline should return error when docker build fails`() { }
+    fun `buildDockerImage should return success when dockerfile exists and is valid`() = runTest { }
 
     @Test
-    fun `runPipeline should return error when dockerfile does not exist`() { }
-
-    // Run Failure Cases
-    @Test
-    fun `runPipeline should return error when docker run fails`() { }
+    fun `buildDockerImage should return error when dockerfile does not exist`() = runTest { }
 
     @Test
-    fun `runPipeline should return error when pipeline command fails inside container`() { }
-
-    // Argument Verification (what you can actually test)
-    @Test
-    fun `runPipeline should call docker build with correct image tag`() { }
+    fun `buildDockerImage should return error when dockerfile is invalid`() = runTest { }
 
     @Test
-    fun `runPipeline should call docker run with correct volume mounts`() { }
+    fun `buildDockerImage should create image with correct tag`() = runTest { }
+
+    // Run Tests (assuming image already exists)
+    @Test
+    fun `runPipeline should return success when image exists and command succeeds`() = runTest { }
 
     @Test
-    fun `runPipeline should call docker run with correct pipeline commands`() { }
+    fun `runPipeline should return error when image does not exist`() = runTest { }
 
-    // Edge Cases
     @Test
-    fun `runPipeline should handle pipeline with special characters in id`() { }
+    fun `runPipeline should return error when pipeline command fails inside container`() = runTest { }
+
+    @Test
+    fun `runPipeline should mount volumes correctly`() = runTest { }
+
+    @Test
+    fun `runPipeline should pass correct command arguments to container`() = runTest { }
+
+    @Test
+    fun `runPipeline should handle special characters in pipeline id`() = runTest { }
+
+    @Test
+    fun `runPipeline should remove container after execution`() = runTest { }
 }

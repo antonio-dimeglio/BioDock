@@ -34,29 +34,31 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         }
     }
 
+    suspend fun buildDockerImage(pipeline: Pipeline): Result {
+        val dockerFilePath = Path("pipelines").resolve(pipeline.id)
+        val buildResult = this.commandExecutor.execute(
+            "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
+        )
+
+        return if (buildResult.exitCode != 0){
+            Result.Error("Failed to build docker image: ${buildResult.error}")
+        } else {
+            Result.Success("Successfully built docker image: ${pipeline.id}")
+        }
+
+    }
+
     suspend fun runPipeline(
         pipeline: Pipeline,
         hostInputPath: String,
-        hostOutputPath: String,
-        buildImage: Boolean = false): Result {
-
-        if (buildImage){
-            val dockerFilePath = Path("pipelines").resolve(pipeline.id)
-            val buildResult = this.commandExecutor.execute(
-                "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
-            )
-
-            if (buildResult.exitCode != 0){
-                return Result.Error("Failed to build docker image: ${buildResult.error}")
-            }
-        }
-
+        hostOutputPath: String): Result {
         val expandedCommand = expandGlobs(pipeline.command, hostInputPath)
 
         val runResult = this.commandExecutor.execute(
             "docker", "run", "--rm",
             "-v", "$hostInputPath:/data",
             "-v", "$hostOutputPath:/results",
+            "--name", pipeline.id,
             "biodock/${pipeline.id}",
             *expandedCommand.toTypedArray()
         )
@@ -83,14 +85,11 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
     }
 
     private fun expandSingleGlob(globPattern: String, hostInputPath: String): List<String> {
-        // Extract the directory and pattern from the glob
-        // e.g., "/data/*.fastq" -> directory="/data", pattern="*.fastq"
         val parts = globPattern.split("/")
         val pattern = parts.last()
         val prefix = parts.dropLast(1).joinToString("/")
 
         if (pattern.contains("*")) {
-            // Convert glob pattern to regex
             val regex = pattern.replace("*", ".*").toRegex()
 
             val matchingFiles = File(hostInputPath).listFiles()
