@@ -34,7 +34,7 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         }
     }
 
-    suspend fun buildDockerImage(pipeline: Pipeline): Result {
+    suspend fun buildDockerImage(pipeline: Pipeline): Result<String> {
         val dockerFilePath = Path("pipelines").resolve(pipeline.id)
         val buildResult = this.commandExecutor.execute(
             "docker", "build", "-t", "biodock/${pipeline.id}", "${dockerFilePath}/."
@@ -43,15 +43,26 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         return if (buildResult.exitCode != 0){
             Result.Error("Failed to build docker image: ${buildResult.error}")
         } else {
-            Result.Success("Successfully built docker image: ${pipeline.id}")
+            Result.Success("biodock/${pipeline.id}", "Successfully built docker image: ${pipeline.id}")
         }
+    }
 
+    suspend fun removeDockerImage(pipeline: Pipeline): Result<String> {
+        val removeResult = this.commandExecutor.execute(
+            "docker", "rmi", "biodock/${pipeline.id}"
+        )
+
+        return if (removeResult.exitCode != 0){
+            Result.Error("Failed to remove docker image: ${removeResult.error}")
+        } else {
+            Result.Success("biodock/${pipeline.id}", "Successfully removed docker image: ${pipeline.id}")
+        }
     }
 
     suspend fun runPipeline(
         pipeline: Pipeline,
         hostInputPath: String,
-        hostOutputPath: String): Result {
+        hostOutputPath: String): Result<String> {
         val expandedCommand = expandGlobs(pipeline.command, hostInputPath)
 
         val runResult = this.commandExecutor.execute(
@@ -66,15 +77,35 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         return if (runResult.exitCode != 0 ) {
             Result.Error("Failed to run pipeline: ${runResult.error}")
         } else {
-            Result.Success("Successfully ran pipeline: ${pipeline.name}")
+            Result.Success(hostOutputPath, "Successfully ran pipeline: ${pipeline.name}")
         }
     }
 
-    suspend fun fetchContainerStatus(pipeline: Pipeline): ContainerInfo {
-        TODO()
+    suspend fun fetchContainerStatus(pipeline: Pipeline): Result<ContainerInfo> {
+        val statusResult = this.commandExecutor.execute(
+            "docker", "ps", "-a", "--format",
+            "{{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}\t{{.Names}}",
+            "--filter", "name=${pipeline.id}"
+        )
+
+        if (statusResult.exitCode != 0 || statusResult.output.isBlank()) {
+            return Result.Error("Failed to fetch container status: ${statusResult.error}")
+        }
+
+        val parts = statusResult.output.trim().split("\t")
+        val containerInfo = ContainerInfo(
+            containerId = parts.getOrElse(0) { "" },
+            image = parts.getOrElse(1) { "" },
+            command = parts.getOrElse(2) { "" },
+            created = parts.getOrElse(3) { "" },
+            status = parts.getOrElse(4) { "" },
+            ports = parts.getOrElse(5) { "" },
+            names = parts.getOrElse(6) { "" }
+        )
+        return Result.Success(containerInfo, "Successfully fetched container status")
     }
 
-    private fun expandGlobs(command: List<String>, hostInputPath: String): List<String> {
+    internal fun expandGlobs(command: List<String>, hostInputPath: String): List<String> {
         return command.flatMap { arg ->
             if (arg.contains("*")) {
                 expandSingleGlob(arg, hostInputPath)
@@ -84,7 +115,7 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
         }
     }
 
-    private fun expandSingleGlob(globPattern: String, hostInputPath: String): List<String> {
+    internal fun expandSingleGlob(globPattern: String, hostInputPath: String): List<String> {
         val parts = globPattern.split("/")
         val pattern = parts.last()
         val prefix = parts.dropLast(1).joinToString("/")

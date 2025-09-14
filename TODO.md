@@ -5,7 +5,7 @@
 ## 🎯 Current Priority: Core Pipeline Execution (Phase 1)
 
 ### Critical Fixes & Updates
-- [ ] **Fix DockerService volume mounting** 
+- [X] **Fix DockerService volume mounting** 
   - Fix missing `-` in volume flags (`-v` instead of `v`)  
   - Update volume paths to match new design (`/data` for input, `/results` for output)
   - Complete `runPipeline()` method implementation (currently has TODO)
@@ -23,7 +23,7 @@
   - Remove any lingering references to old input/output directory fields in other files
 
 ### Core Functionality Implementation  
-- [ ] **Complete Docker Integration**
+- [X] **Complete Docker Integration**
   - Implement `fetchContainerStatus()` method
   - Add container cleanup after execution
   - Implement proper docker build caching and cleanup
@@ -44,7 +44,7 @@
 ## 🧪 Testing Phase 1A
 *Complete after each core functionality implementation*
 
-- [ ] **Docker Service Tests**
+- [X] **Docker Service Tests**
   - Test docker build with real Dockerfile
   - Test volume mounting and file access
   - Test error handling for docker failures

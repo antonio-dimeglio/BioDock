@@ -57,10 +57,12 @@ class FileServiceTest {
           !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Invalid FastQ format, file contains less than 4 lines.", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Invalid FastQ format, file contains less than 4 lines.", result.message)
+            }
+        }
     }
 
     @Test
@@ -75,11 +77,12 @@ class FileServiceTest {
           !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Invalid header line: must start with '@'", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Invalid header line: must start with '@'", result.message)
+            }
+        }
     }
 
     @Test
@@ -94,11 +97,12 @@ class FileServiceTest {
           !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Invalid separator line: must start with '+'", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Invalid separator line: must start with '+'", result.message)
+            }
+        }
     }
 
     @Test
@@ -108,16 +112,17 @@ class FileServiceTest {
 
         tempFile.writeText("""
           @SEQ_ID
- 
+
           +
           !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC65
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Sequence or quality line is empty", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Sequence or quality line is empty", result.message)
+            }
+        }
     }
 
     @Test
@@ -129,15 +134,16 @@ class FileServiceTest {
           @SEQ_ID
           GATTTGGGGTTCAAAGCAGTATCGATCAAATAGTAAATCCATTTGTTCAACTCACAGTTT
           +
-          
+
           -
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Sequence or quality line is empty", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Sequence or quality line is empty", result.message)
+            }
+        }
     }
 
     @Test
@@ -152,11 +158,12 @@ class FileServiceTest {
           !''*((((***+))%%%++)(%%%%).1***-+*''))**55CCF>>>>>>CCCCCCC6
       """.trimIndent())
 
-        val result = FileService.validateFastqFile(tempFile)
-
-        assertTrue(result is Result.Error)
-        val errorResult = result as Result.Error
-        assertEquals("Sequence and quality lines have different lengths", errorResult.message)
+        when (val result = FileService.validateFastqFile(tempFile)) {
+            is Result.Success -> fail("Expected error but got success")
+            is Result.Error -> {
+                assertEquals("Sequence and quality lines have different lengths", result.message)
+            }
+        }
     }
 
     @Test

@@ -14,13 +14,6 @@ import kotlin.io.path.exists
 
 @OptIn(ExperimentalPathApi::class)
 class PipelineServiceTest {
-    val actualPipeline = Pipeline(
-        id="fastqc-base",
-        name="FastQC",
-        description="The base pipeline for fastQC.",
-        command=listOf("fastqc", "--outdir=/data/output", "/data/input/*.fastq"),
-        version="1.0.0",
-        inputFileTypes = listOf("fastq", "fq", "fastq.gz", "fq.gz"))
 
     val mockPipeline = Pipeline(
         id="mockPipeline",
@@ -89,7 +82,12 @@ class PipelineServiceTest {
         try {
             val result = PipelineService.savePipeline(mockPipeline, tempDockerFile.toString(),
                 "$tempPipelineDir/")
-            assertEquals(Result.Success("Successfully saved pipeline."), result)
+            when (result) {
+                is Result.Success -> {
+                    assertEquals("Successfully saved pipeline.", result.message)
+                }
+                is Result.Error -> fail("Expected success but got error: ${result.message}")
+            }
 
             val savedPipelines = PipelineService.getAvailablePipelines("$tempPipelineDir/")
             assertEquals(listOf(mockPipeline), savedPipelines)
@@ -104,9 +102,12 @@ class PipelineServiceTest {
         val tempPipelineDir = Files.createTempDirectory("test-pipelines")
 
         try {
-            val expected = Result.Error("Dockerfile not found at nonexistentfile")
-            val result = PipelineService.savePipeline(mockPipeline, "nonexistentfile", "$tempPipelineDir/")
-            assertEquals(expected, result)
+            when (val result = PipelineService.savePipeline(mockPipeline, "nonexistentfile", "$tempPipelineDir/")) {
+                is Result.Success -> fail("Expected error but got success")
+                is Result.Error -> {
+                    assertEquals("Dockerfile not found at nonexistentfile", result.message)
+                }
+            }
         } finally {
             tempPipelineDir.deleteRecursively()
         }
@@ -144,8 +145,12 @@ class PipelineServiceTest {
         try {
             PipelineService.savePipeline(mockPipeline, tempDockerFile.toString(), "$tempPipelineDir/")
 
-            val result = PipelineService.validatePipeline(mockPipeline, "$tempPipelineDir/")
-            assertEquals(Result.Success("Valid pipeline."), result)
+            when (val result = PipelineService.validatePipeline(mockPipeline, "$tempPipelineDir/")) {
+                is Result.Success -> {
+                    assertEquals("Valid pipeline.", result.message)
+                }
+                is Result.Error -> fail("Expected success but got error: ${result.message}")
+            }
         } finally {
             tempPipelineDir.deleteRecursively()
             tempDockerFile.deleteIfExists()

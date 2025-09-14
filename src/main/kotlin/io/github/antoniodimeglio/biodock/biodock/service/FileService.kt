@@ -15,7 +15,7 @@ import java.util.zip.GZIPInputStream
 object FileService {
     private val logger = KotlinLogging.logger {}
 
-    private fun isFastqFormatValid(file: File): Result {
+    private fun isFastqFormatValid(file: File): Result<String> {
         return try {
             val reader = if (file.name.endsWith(".gz", ignoreCase = true)) {
                 GZIPInputStream(file.inputStream()).bufferedReader()
@@ -53,15 +53,15 @@ object FileService {
                     !lines[3].all { it.code in 33..126 } ->
                         Result.Error("Invalid quality score characters")
 
-                    else -> Result.Success("Valid FASTQ format")
+                    else -> Result.Success(file.absolutePath, "Valid FASTQ format")
                 }
             }
         } catch (e: Exception) {
-            Result.Error("Failed to read Fastq file: ${e.message}")
+            Result.Error("Failed to read Fastq file: ${e.message}", e)
         }
     }
 
-    fun validateFastqFile(file: File): Result {
+    fun validateFastqFile(file: File): Result<String> {
         return when {
             !file.exists() -> Result.Error("File does not exist")
             !file.canRead() -> Result.Error("Cannot read file")

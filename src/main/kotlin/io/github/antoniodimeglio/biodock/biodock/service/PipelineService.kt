@@ -35,7 +35,7 @@ object PipelineService {
         }
     }
 
-    fun savePipeline(pipeline: Pipeline, dockerFilePath: String, pipelinePath:String = "pipelines/"): Result {
+    fun savePipeline(pipeline: Pipeline, dockerFilePath: String, pipelinePath:String = "pipelines/"): Result<String> {
         val pipelineDir = Paths.get(pipelinePath, pipeline.id)
         val configFile = pipelineDir.resolve("config.json")
         val dockerFile = pipelineDir.resolve("Dockerfile")
@@ -61,10 +61,10 @@ object PipelineService {
                     logger.warn { "Failed to cleanup directory after error: ${cleanupException.message}" }
                 }
             }
-            return Result.Error("Error, got exception ${e.message} when trying to save pipeline.")
+            return Result.Error("Error, got exception ${e.message} when trying to save pipeline.", e)
         }
 
-        return Result.Success("Successfully saved pipeline.")
+        return Result.Success(pipelineDir.toString(), "Successfully saved pipeline.")
     }
 
     @OptIn(ExperimentalPathApi::class)
@@ -77,7 +77,7 @@ object PipelineService {
         }
     }
 
-    fun validatePipeline(pipeline: Pipeline, pipelineDir: String = "pipelines/"): Result {
+    fun validatePipeline(pipeline: Pipeline, pipelineDir: String = "pipelines/"): Result<Pipeline> {
         val pipelineFolder = Paths.get(pipelineDir, pipeline.id)
 
         if (!pipelineFolder.exists()) {
@@ -98,13 +98,12 @@ object PipelineService {
             return Result.Error("Found empty dockerfile for pipeline ${pipeline.id}.")
         }
 
-        try {
+        return try {
             val content = json.readText()
-            Json.decodeFromString<Pipeline>(content)
+            val validatedPipeline = Json.decodeFromString<Pipeline>(content)
+            Result.Success(validatedPipeline, "Valid pipeline.")
         } catch (e: Exception) {
-            return Result.Error("Failed to parse config.json for pipeline, got error ${e.message}")
+            Result.Error("Failed to parse config.json for pipeline, got error ${e.message}", e)
         }
-
-        return Result.Success("Valid pipeline.")
     }
 }

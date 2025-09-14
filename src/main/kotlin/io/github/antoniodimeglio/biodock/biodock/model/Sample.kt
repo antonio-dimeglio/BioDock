@@ -36,7 +36,7 @@ data class Sample(
         return when (val result = FileService.validateFastqFile(file)){
             is Result.Success -> {
                 isValid = true
-                validationMessage = result.message
+                validationMessage = result.message.ifEmpty { "File is valid" }
                 true
             }
             is Result.Error -> {
