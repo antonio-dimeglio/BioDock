@@ -1,6 +1,7 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
 import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -34,7 +35,7 @@ object PipelineService {
         }
     }
 
-    fun savePipeline(pipeline: Pipeline, dockerFilePath: String, pipelinePath:String = "pipelines/"): ValidationResult {
+    fun savePipeline(pipeline: Pipeline, dockerFilePath: String, pipelinePath:String = "pipelines/"): Result<String> {
         val pipelineDir = Paths.get(pipelinePath, pipeline.id)
         val configFile = pipelineDir.resolve("config.json")
         val dockerFile = pipelineDir.resolve("Dockerfile")
@@ -49,7 +50,7 @@ object PipelineService {
             Files.writeString(configFile, json, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
 
             if (!Files.exists(sourceDockerFile)) {
-                return ValidationResult.Error("Dockerfile not found at $dockerFilePath")
+                return Result.Error("Dockerfile not found at $dockerFilePath")
         }
         Files.copy(sourceDockerFile, dockerFile, StandardCopyOption.REPLACE_EXISTING)
         } catch (e: Exception) {
@@ -60,10 +61,10 @@ object PipelineService {
                     logger.warn { "Failed to cleanup directory after error: ${cleanupException.message}" }
                 }
             }
-            return ValidationResult.Error("Error, got exception ${e.message} when trying to save pipeline.")
+            return Result.Error("Error, got exception ${e.message} when trying to save pipeline.", e)
         }
 
-        return ValidationResult.Success("Successfully saved pipeline.")
+        return Result.Success(pipelineDir.toString(), "Successfully saved pipeline.")
     }
 
     @OptIn(ExperimentalPathApi::class)
@@ -76,34 +77,33 @@ object PipelineService {
         }
     }
 
-    fun validatePipeline(pipeline: Pipeline, pipelineDir: String = "pipelines/"): ValidationResult {
+    fun validatePipeline(pipeline: Pipeline, pipelineDir: String = "pipelines/"): Result<Pipeline> {
         val pipelineFolder = Paths.get(pipelineDir, pipeline.id)
 
         if (!pipelineFolder.exists()) {
-            return ValidationResult.Error("Pipeline ${pipeline.id} does not exist.")
+            return Result.Error("Pipeline ${pipeline.id} does not exist.")
         }
 
         val json = pipelineFolder.resolve("config.json").toFile()
         val dockerfilePath = pipelineFolder.resolve("Dockerfile")
 
         if (!json.exists()) {
-            return ValidationResult.Error("Could not find json for pipeline ${pipeline.id}.")
+            return Result.Error("Could not find json for pipeline ${pipeline.id}.")
         }
 
         if (!dockerfilePath.exists()) {
-            return ValidationResult.Error("Could not find dockerfile for pipeline ${pipeline.id}.")
+            return Result.Error("Could not find dockerfile for pipeline ${pipeline.id}.")
         }
         if (dockerfilePath.fileSize() == 0L) {
-            return ValidationResult.Error("Found empty dockerfile for pipeline ${pipeline.id}.")
+            return Result.Error("Found empty dockerfile for pipeline ${pipeline.id}.")
         }
 
-        try {
+        return try {
             val content = json.readText()
-            Json.decodeFromString<Pipeline>(content)
+            val validatedPipeline = Json.decodeFromString<Pipeline>(content)
+            Result.Success(validatedPipeline, "Valid pipeline.")
         } catch (e: Exception) {
-            return ValidationResult.Error("Failed to parse config.json for pipeline, got error ${e.message}")
+            Result.Error("Failed to parse config.json for pipeline, got error ${e.message}", e)
         }
-
-        return ValidationResult.Success("Valid pipeline.")
     }
 }

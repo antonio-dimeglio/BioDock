@@ -2,10 +2,7 @@
   "id": "fastqc-base",
   "name": "FastQC",
   "description": "The base pipeline for fastQC.",
-  "command": ["fastqc", "--outdir=/data/output", "/data/input/*.fastq"],
+  "command": ["fastqc", "--outdir=/results", "/data/*.fastq"],
   "version": "1.0.0",
-  "inputFileTypes": ["fastq", "fq", "fastq.gz", "fq.gz"],
-  "outputFileTypes": ["html", "zip"],
-  "inputDirectory": "/data/input",
-  "outputDirectory": "/data/output"
+  "inputFileTypes": ["fastq", "fq", "fastq.gz", "fq.gz"]
 }

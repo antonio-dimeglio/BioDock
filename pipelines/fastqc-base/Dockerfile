@@ -6,7 +6,7 @@ ENV FASTQURL=https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0
 ENV DESTZIP=/opt/fastqc/fastqc.zip
 ENV DEST=/opt/fastqc
 
-RUN apk add --no-cache openjdk11-jre-headless wget unzip perl && \
+RUN apk add --no-cache openjdk11-jre fontconfig ttf-dejavu wget unzip perl && \
     mkdir -p $DEST && \
     wget $FASTQURL -O $DESTZIP && \
     unzip $DESTZIP -d $DEST && \

@@ -1,7 +1,7 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
-import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.antoniodimeglio.biodock.biodock.util.FileSerializer
 import io.github.antoniodimeglio.biodock.biodock.util.LocalDateSerializer
 import kotlinx.serialization.Serializable
@@ -34,12 +34,12 @@ data class Sample(
 ) {
     fun isValidFastq(): Boolean {
         return when (val result = FileService.validateFastqFile(file)){
-            is ValidationResult.Success -> {
+            is Result.Success -> {
                 isValid = true
-                validationMessage = result.message
+                validationMessage = result.message.ifEmpty { "File is valid" }
                 true
             }
-            is ValidationResult.Error -> {
+            is Result.Error -> {
                 isValid = false
                 validationMessage = result.message
                 false

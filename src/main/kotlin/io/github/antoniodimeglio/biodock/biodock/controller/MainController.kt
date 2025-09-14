@@ -5,7 +5,7 @@ import io.github.antoniodimeglio.biodock.biodock.model.Project
 import io.github.antoniodimeglio.biodock.biodock.service.DockerService
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
 import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
-import io.github.antoniodimeglio.biodock.biodock.service.ValidationResult
+import io.github.antoniodimeglio.biodock.biodock.util.Result
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -134,7 +134,7 @@ class MainController : Initializable {
             if (db.hasFiles()) {
                 db.files.forEach { file ->
                     if (!selectedFiles.contains(file) &&
-                        FileService.validateFastqFile(file) is ValidationResult.Success){
+                        FileService.validateFastqFile(file) is Result.Success){
                         selectedFiles.add(file)
                     }
                 }
@@ -277,7 +277,7 @@ class MainController : Initializable {
 
         if (files != null) {
             selectedFiles.addAll(
-                files.filter { FileService.validateFastqFile(it) is ValidationResult.Success  &&
+                files.filter { FileService.validateFastqFile(it) is Result.Success  &&
                     !selectedFiles.contains(it)}
             )
 

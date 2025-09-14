@@ -1,5 +1,6 @@
 package io.github.antoniodimeglio.biodock.biodock.util
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -12,6 +13,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(forClass = LocalDate::class)
 class LocalDateSerializer : KSerializer<LocalDateTime> {
     private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -24,6 +26,7 @@ class LocalDateSerializer : KSerializer<LocalDateTime> {
         return LocalDateTime.parse(decoder.decodeString(), formatter)
     }
 }
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(forClass = File::class)
 object FileSerializer : KSerializer<File> {
 
