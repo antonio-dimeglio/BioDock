@@ -5,7 +5,7 @@ import javafx.beans.property.*
 import javafx.collections.FXCollections
 
 class AppState {
-    val currentProject = SimpleObjectProperty<Project>(Project(name = "New Project", selectedPipeline = ""))
+    val currentProject = SimpleObjectProperty<Project>(Project(name = "New Project", selectedPipeline = PipelineService.getAvailablePipelines().first()))
     val selectedSamples = SimpleListProperty<Sample>(FXCollections.observableArrayList())
     val selectedPipeline = SimpleObjectProperty<Pipeline>()
     val isAnalysisRunning = SimpleBooleanProperty(false)
@@ -22,7 +22,7 @@ class AppState {
     }
 
     fun reset() {
-        currentProject.set(Project(name = "New Project", selectedPipeline = ""))
+        currentProject.set(Project(name = "New Project", selectedPipeline = PipelineService.getAvailablePipelines().first()))
         selectedSamples.clear()
         selectedPipeline.set(availablePipelines.first())
         isAnalysisRunning.set(false)

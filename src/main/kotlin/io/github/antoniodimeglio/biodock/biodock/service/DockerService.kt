@@ -11,9 +11,57 @@ import kotlin.collections.emptyList
 import kotlin.io.path.Path
 
 
+/**
+ * Service responsible for all Docker container operations in BioDock.
+ *
+ * This service provides a high-level interface for Docker operations including:
+ * - Docker installation and runtime status checking
+ * - Building Docker images from pipeline Dockerfiles
+ * - Running containerized pipelines with proper volume mounting
+ * - Managing container lifecycle and cleanup
+ *
+ * ## Volume Mounting Strategy
+ * The service uses a standardized mounting approach:
+ * - Host input directory → `/data` inside container
+ * - Host output directory → `/results` inside container
+ *
+ * ## Error Handling
+ * All methods return `Result<T>` for consistent error handling:
+ * ```kotlin
+ * when (val result = dockerService.runPipeline(pipeline, input, output)) {
+ *     is Result.Success -> println("Success: ${result.data}")
+ *     is Result.Error -> println("Error: ${result.message}")
+ * }
+ * ```
+ *
+ * @property commandExecutor Abstraction for executing system commands, allows testing with mocks
+ * @constructor Creates a DockerService with optional command executor for testing
+ *
+ * @see CommandExecutor For system command execution interface
+ * @see Pipeline For pipeline configuration structure
+ * @see Result For error handling pattern
+ *
+ * @since 1.0.0
+ * @author BioDock Development Team
+ */
 class DockerService(private val commandExecutor: CommandExecutor = DefaultCommandExecutor()) {
     private val logger = KotlinLogging.logger {}
 
+    /**
+     * Checks the current status of Docker installation and daemon.
+     *
+     * Performs a two-step verification:
+     * 1. Checks if Docker is installed by running `docker --version`
+     * 2. Checks if Docker daemon is running by running `docker info`
+     *
+     * @return [DockerStatus] indicating the current state:
+     *   - [DockerStatus.RUNNING] - Docker is installed and daemon is running
+     *   - [DockerStatus.NOT_RUNNING] - Docker is installed but daemon is not running
+     *   - [DockerStatus.NOT_INSTALLED] - Docker is not installed
+     *   - [DockerStatus.ERROR] - Error occurred during status check
+     *
+     * @see DockerStatus For detailed status enum documentation
+     */
     suspend fun getDockerStatus(): DockerStatus {
         return try {
             val versionStatus = commandExecutor.execute("docker", "--version")
@@ -136,9 +184,25 @@ class DockerService(private val commandExecutor: CommandExecutor = DefaultComman
 }
 
 
+/**
+ * Represents the current status of Docker installation and daemon.
+ *
+ * This enum is used by [DockerService.getDockerStatus] to indicate whether
+ * Docker is properly installed and running, allowing the UI to provide
+ * appropriate feedback to users.
+ *
+ * @see DockerService.getDockerStatus
+ */
 enum class DockerStatus {
+    /** Docker is not installed on the system */
     NOT_INSTALLED,
+
+    /** Docker is installed but the daemon is not running */
     NOT_RUNNING,
+
+    /** Docker is installed and the daemon is running (ready for use) */
     RUNNING,
+
+    /** An error occurred while checking Docker status */
     ERROR
 }

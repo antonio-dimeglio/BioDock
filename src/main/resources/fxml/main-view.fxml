@@ -48,7 +48,7 @@
 
 <!--                <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button" onAction="#handleOpenFile"/>-->
                 <Button fx:id="openFileBtn" text="📁 Add Files" styleClass="primary-button"/>
-                <Button fx:id="runBtn" text="▶ Run Analysis" styleClass="success-button" onAction="#handleRunFastqc"/>
+                <Button fx:id="runBtn" text="▶ Run Analysis" styleClass="success-button" onAction="#runPipeline"/>
 
             <Separator orientation="VERTICAL"/>
 

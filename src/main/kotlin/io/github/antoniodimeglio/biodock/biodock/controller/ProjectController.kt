@@ -1,6 +1,8 @@
 package io.github.antoniodimeglio.biodock.biodock.controller
 
+import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
 import io.github.antoniodimeglio.biodock.biodock.model.Project
+import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
 import javafx.collections.FXCollections
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -10,6 +12,7 @@ import javafx.scene.control.CheckBox
 import javafx.scene.control.ComboBox
 import javafx.scene.control.DialogPane
 import javafx.scene.control.Label
+import javafx.scene.control.ListCell
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
@@ -24,7 +27,7 @@ class ProjectController : Initializable {
     @FXML private lateinit var descriptionArea: TextArea
     @FXML private lateinit var locationField: TextField
     @FXML private lateinit var browseButton: Button
-    @FXML private lateinit var defaultPipelineCombo: ComboBox<String>
+    @FXML private lateinit var defaultPipelineCombo: ComboBox<Pipeline>
     @FXML private lateinit var sampleFormatCombo: ComboBox<String>
     @FXML private lateinit var createSampleSheetCheck: CheckBox
     @FXML private lateinit var enableLoggingCheck: CheckBox
@@ -47,16 +50,27 @@ class ProjectController : Initializable {
     }
 
     private fun setupPipelineOptions() {
-        val pipelines = FXCollections.observableArrayList(
-            "FastQC Quality Control",
-            "RNA-seq Analysis",
-            "DNA-seq Variant Calling",
-            "ChIP-seq Analysis",
-            "Metagenomics",
-            "Custom Pipeline"
-        )
-        defaultPipelineCombo.items = pipelines
+        val availablePipelines = PipelineService.getAvailablePipelines()
+        defaultPipelineCombo.items.addAll(availablePipelines)
         defaultPipelineCombo.selectionModel.selectFirst()
+
+        // Set up how Pipeline objects are displayed in the ComboBox dropdown
+        defaultPipelineCombo.setCellFactory {
+            object : ListCell<Pipeline>() {
+                override fun updateItem(item: Pipeline?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    text = if (empty || item == null) null else item.name
+                }
+            }
+        }
+
+        // Set up how the selected Pipeline is displayed in the ComboBox button
+        defaultPipelineCombo.buttonCell = object : ListCell<Pipeline>() {
+            override fun updateItem(item: Pipeline?, empty: Boolean) {
+                super.updateItem(item, empty)
+                text = if (empty || item == null) null else item.name
+            }
+        }
     }
 
     private fun setupSampleFormatOptions() {
@@ -110,7 +124,6 @@ class ProjectController : Initializable {
     private fun validateForm(): Boolean {
         val errors = mutableListOf<String>()
 
-        // Validate project name
         val projectName = projectNameField.text?.trim()
         if (projectName.isNullOrBlank()) {
             errors.add("Project name is required")
@@ -148,7 +161,7 @@ class ProjectController : Initializable {
             Project(
                 name = projectNameField.text.trim(),
                 description = descriptionArea.text?.trim() ?: "",
-                selectedPipeline = defaultPipelineCombo.selectionModel.selectedItem.toString(),
+                selectedPipeline = defaultPipelineCombo.selectionModel.selectedItem,
                 workingDirectory = File(locationField.text)
             )
         } else null

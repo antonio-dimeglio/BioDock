@@ -1,223 +1,297 @@
-# BioDock Development TODO
+# BioDock Implementation TODO 🔧
+*Concrete implementation tasks to complete core functionality*
 
-*Organized development roadmap based on current state analysis and recent design decisions*
+## 🚨 Critical Implementation Gaps (Phase 1)
+*These need to be completed for basic functionality to work*
 
-## 🎯 Current Priority: Core Pipeline Execution (Phase 1)
+### 1. Pipeline Model Completion
+**File: `src/main/kotlin/.../model/Pipeline.kt`**
+- [ ] **Add missing fields to Pipeline data class**:
+  ```kotlin
+  val outputFileTypes: List<String>,
+  val inputDirectory: String = "/data",
+  val outputDirectory: String = "/results",
+  val dockerImage: String? = null,
+  val requirements: Map<String, String> = emptyMap()
+  ```
+- [ ] **Update existing pipeline JSON files** to include new fields
+- [ ] **Test Pipeline serialization/deserialization** with new fields
 
-### Critical Fixes & Updates
-- [X] **Fix DockerService volume mounting** 
-  - Fix missing `-` in volume flags (`-v` instead of `v`)  
-  - Update volume paths to match new design (`/data` for input, `/results` for output)
-  - Complete `runPipeline()` method implementation (currently has TODO)
-  - Add proper error handling and logging for docker run execution
+### 2. MainController - Core Pipeline Execution
+**File: `src/main/kotlin/.../controller/MainController.kt`**
 
-- [ ] **Update UI for Flexible Input System**
-  - Implement folder selection dialog alongside current drag & drop
-  - Create input handler that supports both file drag/drop AND folder selection  
-  - Implement symlink creation for dragged files (avoid copying large genomics files)
-  - Update MainController to handle both input methods
-  - Add UI indicators showing whether user selected files or folder
+#### 2.1 Critical Missing Methods
+- [ ] **Implement `runPipeline()` method (lines 379-382)**:
+  ```kotlin
+  private fun runPipeline() {
+      // 1. Validate selected pipeline exists
+      // 2. Validate input samples exist and are valid
+      // 3. Create output directory
+      // 4. Call DockerService.buildDockerImage() if needed
+      // 5. Call DockerService.runPipeline() with paths
+      // 6. Update UI with progress/results
+      // 7. Handle errors with user dialogs
+  }
+  ```
 
-- [ ] **Pipeline Model Cleanup** ✅ *Already Done*
-  - Pipeline model already matches simplified design
-  - Remove any lingering references to old input/output directory fields in other files
+- [ ] **Replace `handleRunFastqc()` simulation with real execution**:
+  ```kotlin
+  // Remove simulateProgress() call
+  // Add actual pipeline execution logic
+  // Use coroutines for async execution
+  ```
 
-### Core Functionality Implementation  
-- [X] **Complete Docker Integration**
-  - Implement `fetchContainerStatus()` method
-  - Add container cleanup after execution
-  - Implement proper docker build caching and cleanup
-  - Add support for streaming docker build/run output to UI
+#### 2.2 Service Integration (Currently Missing)
+- [ ] **Add service instances to MainController**:
+  ```kotlin
+  private val dockerService = DockerService()
+  private val fileService = FileService()
+  private val pipelineService = PipelineService()
+  private val reportService = ReportService()
+  ```
 
-- [ ] **Result Processing System**
-  - Create result collection from `/results/` volume mount
-  - Implement basic result viewer/browser in UI
-  - Add result file type detection and handling
-  - Create result archiving and project persistence
+- [ ] **Implement async pipeline execution with coroutines**:
+  ```kotlin
+  private fun executeAsyncPipeline(pipeline: Pipeline, samples: List<Sample>, outputPath: String) {
+      scope.launch {
+          // Docker build + run logic here
+          // Update UI on Platform.runLater
+      }
+  }
+  ```
 
-- [ ] **Error Handling & User Feedback**
-  - Implement comprehensive error dialogs for pipeline failures
-  - Add progress indicators for docker build and run operations
-  - Create status updates during long-running operations
-  - Add validation for user-selected input folders
+#### 2.3 Error Handling Integration
+- [ ] **Add Result<T> handling for all service calls**:
+  ```kotlin
+  when (val result = dockerService.runPipeline(...)) {
+      is Result.Success -> // Update UI with success
+      is Result.Error -> showErrorDialog(result.message)
+  }
+  ```
 
-## 🧪 Testing Phase 1A
-*Complete after each core functionality implementation*
+### 3. File Validation System
+**File: `src/main/kotlin/.../service/FileService.kt`**
 
-- [X] **Docker Service Tests**
-  - Test docker build with real Dockerfile
-  - Test volume mounting and file access
-  - Test error handling for docker failures
-  - Mock tests for different docker status scenarios
+- [ ] **Replace hardcoded FASTQ validation (line 66 TODO)**:
+  ```kotlin
+  fun validateFileFormat(file: File, allowedTypes: List<String>): Boolean {
+      return allowedTypes.any { type -> validateSpecificFormat(file, type) }
+  }
 
-- [ ] **Integration Tests**
-  - End-to-end test: drag files → select pipeline → run → get results
-  - Test folder selection workflow
-  - Test with actual FastQC pipeline
-  - Test error scenarios (docker not running, invalid files, etc.)
+  private fun validateSpecificFormat(file: File, type: String): Boolean {
+      return when (type.lowercase()) {
+          "fastq", "fq" -> validateFastq(file)
+          "fasta", "fa" -> validateFasta(file)
+          "bam" -> validateBam(file)
+          else -> false
+      }
+  }
+  ```
 
-- [ ] **UI Testing**
-  - Manual testing of drag & drop with large files
-  - Test folder selection on different OS
-  - Verify symlink creation and cleanup
-  - Test progress indicators and status updates
+- [ ] **Implement missing format validators**:
+  ```kotlin
+  private fun validateFasta(file: File): Boolean
+  private fun validateBam(file: File): Boolean
+  ```
 
-## 📚 Documentation Phase 1B
-*Complete alongside testing*
+- [ ] **Update MainController drag-and-drop to use dynamic validation**:
+  ```kotlin
+  // Replace hardcoded FASTQ check with:
+  val selectedPipeline = pipelineSelector.selectionModel.selectedItem
+  if (selectedPipeline != null) {
+      fileService.validateFileFormat(file, selectedPipeline.inputFileTypes)
+  }
+  ```
 
-- [ ] **Developer Documentation**
-  - Update CLAUDE.md with new design decisions
-  - Document Docker service architecture and error handling
-  - Create troubleshooting guide for common docker issues
-  - Add code examples for pipeline development
+### 4. Results Management Implementation
+**File: `src/main/kotlin/.../service/ReportService.kt`**
 
-- [ ] **User Documentation** 
-  - Create user guide with screenshots showing both input methods
-  - Document supported file types and pipeline requirements
-  - Create troubleshooting section for common user issues
-  - Add example walkthrough with FastQC pipeline
+- [ ] **Implement core ReportService methods**:
+  ```kotlin
+  fun parseOutputFiles(outputDirectory: File, pipeline: Pipeline): AnalysisResult {
+      // Scan output directory for files matching pipeline.outputFileTypes
+      // Create AnalysisResult with file paths and metadata
+  }
 
-- [ ] **Pipeline Developer Guide**
-  - Create comprehensive guide for creating pipeline packages
-  - Document Dockerfile best practices for BioDock
-  - Provide template README.md for pipeline authors
-  - Add validation checklist for pipeline packages
+  fun generateSummaryReport(analysisResult: AnalysisResult): File {
+      // Generate HTML summary from analysis outputs
+  }
+  ```
 
-## 🔧 Phase 2: Enhanced User Experience
+- [ ] **Connect results to UI in MainController**:
+  ```kotlin
+  private fun updateResultsTable() {
+      // Populate resultsTable with completed analyses
+  }
 
-### Pipeline Management
-- [ ] **Pipeline Library System**
-  - Implement local pipeline storage and loading
-  - Create pipeline discovery and selection interface
-  - Add pipeline metadata display (version, description, requirements)
-  - Implement pipeline update and versioning system
+  private fun loadReportInViewer(reportFile: File) {
+      // Load HTML report into reportWebView
+  }
+  ```
 
-- [ ] **Advanced File Support**
-  - Extend beyond FASTQ to BAM, FASTA, VCF, etc.
-  - Create file type detection and validation
-  - Implement file format conversion utilities
-  - Add compressed file support (.gz, .bz2)
+## 🔧 Essential Features (Phase 2)
+*Complete after Phase 1 for full user workflow*
 
-### Batch Processing
-- [ ] **Multi-Sample Support**
-  - Design UI for batch sample processing
-  - Implement parallel pipeline execution
-  - Create batch result management and organization
-  - Add batch progress tracking and cancellation
+### 5. PipelineCreatorController Implementation
+**File: `src/main/kotlin/.../controller/PipelineCreatorController.kt`**
 
-### UI/UX Improvements  
-- [ ] **Enhanced Project Management**
-  - Improve project creation and organization workflows
-  - Add project templates for common analysis types
-  - Implement project sharing and export functionality
-  - Create project history and audit trail
+- [ ] **`onLoadDockerfile()` - File loading**:
+  ```kotlin
+  private fun onLoadDockerfile() {
+      val fileChooser = FileChooser()
+      fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Dockerfile", "Dockerfile", "*"))
+      val file = fileChooser.showOpenDialog(stage)
+      if (file != null) {
+          dockerfileContent.text = file.readText()
+      }
+  }
+  ```
 
-- [ ] **Results Visualization**
-  - Implement integrated report viewer for common outputs (HTML, images)
-  - Create result comparison tools for batch analyses
-  - Add result export and sharing capabilities
-  - Implement basic plotting for numeric results
+- [ ] **`onSave()` - Pipeline creation**:
+  ```kotlin
+  private fun onSave() {
+      val pipeline = Pipeline(
+          id = pipelineIdField.text,
+          name = pipelineNameField.text,
+          // ... other fields from form
+      )
+      pipelineService.savePipeline(pipeline, dockerfileContent.text)
+  }
+  ```
 
-## 🧪 Testing Phase 2
-- [ ] **Expanded Test Coverage**
-  - Add tests for new file format support
-  - Create performance tests for batch processing
-  - Implement UI automation tests for complex workflows
-  - Add integration tests with multiple pipeline types
+- [ ] **Form validation methods**:
+  ```kotlin
+  private fun validateForm(): Boolean
+  private fun showValidationErrors(errors: List<String>)
+  ```
 
-- [ ] **User Acceptance Testing**
-  - Create test scenarios based on real bioinformatics workflows
-  - Test with actual research data and use cases
-  - Gather feedback on UI/UX improvements
-  - Document and fix usability issues
+### 6. Docker Integration Improvements
+**File: `src/main/kotlin/.../service/DockerService.kt`**
 
-## 🚀 Phase 3: Advanced Features  
+- [ ] **Fix volume mounting to use Pipeline fields**:
+  ```kotlin
+  suspend fun runPipeline(pipeline: Pipeline, hostInputPath: String, hostOutputPath: String): Result<String> {
+      val runResult = commandExecutor.execute(
+          "docker", "run", "--rm",
+          "-v", "$hostInputPath:${pipeline.inputDirectory}",
+          "-v", "$hostOutputPath:${pipeline.outputDirectory}",
+          // ...
+      )
+  }
+  ```
 
-### Pipeline Creator Enhancement
-- [ ] **Visual Pipeline Builder**
-  - Complete Pipeline Creator implementation with Dockerfile editing
-  - Add pipeline testing and validation tools
-  - Create pipeline packaging and export functionality
-  - Implement pipeline sharing and distribution tools
+- [ ] **Add container cleanup**:
+  ```kotlin
+  suspend fun cleanupContainer(pipeline: Pipeline): Result<String> {
+      // Remove stopped containers
+  }
+  ```
 
-### Performance & Scalability
-- [ ] **Resource Management**
-  - Implement resource monitoring for pipeline execution
-  - Add memory and CPU usage tracking
-  - Create resource limiting and queue management
-  - Optimize for large file handling
+- [ ] **Add real-time log streaming**:
+  ```kotlin
+  suspend fun runPipelineWithLogs(
+      pipeline: Pipeline,
+      inputPath: String,
+      outputPath: String,
+      logCallback: (String) -> Unit
+  ): Result<String>
+  ```
 
-### Advanced Analysis Features
-- [ ] **Workflow Composition**  
-  - Enable chaining multiple pipelines together
-  - Create workflow templates for common analysis patterns
-  - Implement parameter passing between pipeline steps
-  - Add conditional execution and branching logic
+### 7. Project Management Completion
+**File: `src/main/kotlin/.../service/FileService.kt`**
 
-## 📋 Continuous Tasks
+- [ ] **Implement `loadProject()`**:
+  ```kotlin
+  fun loadProject(projectFile: File): Result<Project> {
+      // Deserialize project JSON
+      // Validate project structure
+      // Return Result with project or error
+  }
+  ```
 
-### Regular Testing & Maintenance
-- [ ] **Weekly Testing Schedule**
-  - Run full test suite on multiple platforms
-  - Test with latest Docker versions
-  - Validate pipeline compatibility
-  - Performance regression testing
+- [ ] **Add project validation**:
+  ```kotlin
+  fun validateProject(project: Project): List<String> {
+      // Check if input files still exist
+      // Validate pipeline references
+      // Return list of validation errors
+  }
+  ```
 
-### Documentation Maintenance
-- [ ] **Keep Documentation Current**
-  - Update README with latest features as they're implemented
-  - Maintain developer documentation as architecture evolves
-  - Update user guides with new UI features
-  - Keep pipeline templates and examples current
+## 🎯 Integration Tasks (Phase 3)
+*Connect all components for seamless user experience*
 
-### Code Quality
-- [ ] **Code Review & Refactoring**
-  - Regular code quality reviews
-  - Refactor legacy code as new patterns emerge
-  - Maintain consistent coding standards
-  - Update dependencies and address security vulnerabilities
+### 8. UI State Management
+- [ ] **Integrate AppState throughout application**:
+  ```kotlin
+  // MainController should update AppState on significant events
+  // Use AppState for consistent status across UI components
+  ```
 
-## 🎯 Success Criteria
+- [ ] **Add progress tracking for long operations**:
+  ```kotlin
+  // Show progress during Docker build/run
+  // Estimate time remaining
+  // Allow cancellation
+  ```
 
-### Phase 1 Complete When:
-- [x] User can select input via drag/drop files OR folder selection
-- [x] Docker pipeline builds and runs successfully
-- [x] Results are collected and accessible to user  
-- [x] Basic error handling prevents application crashes
-- [x] Core functionality is well-tested and documented
+### 9. Complete Missing UI Handlers
+**File: `src/main/kotlin/.../controller/MainController.kt`**
 
-### Phase 2 Complete When:
-- [x] Multiple file formats are supported beyond FASTQ
-- [x] Users can manage a local library of pipelines
-- [x] Batch processing handles multiple samples efficiently
-- [x] Advanced UI features improve user productivity
+- [ ] **`importSampleSheet()`** - Parse CSV/TSV into Sample objects
+- [ ] **`exportResults()`** - Compress outputs for sharing
+- [ ] **`refreshResults()`** - Update status from Docker containers
+- [ ] **`openExternalReport()`** - Open HTML reports in browser
+- [ ] **`saveLogs()`** - Export execution logs
 
-### Phase 3 Complete When:
-- [x] Pipeline Creator enables custom workflow development
-- [x] Advanced features support complex bioinformatics workflows
-- [x] Performance supports research-scale data processing
-- [x] System is ready for community adoption and contribution
+### 10. Error Handling & User Experience
+- [ ] **Comprehensive error dialogs**:
+  ```kotlin
+  private fun showDetailedError(title: String, message: String, details: String)
+  ```
+
+- [ ] **Input validation before execution**:
+  ```kotlin
+  private fun validateBeforeRun(): List<String> {
+      // Check Docker status
+      // Validate selected pipeline
+      // Check input files exist
+      // Verify output directory is writable
+  }
+  ```
+
+- [ ] **Status indicators throughout UI**:
+  ```kotlin
+  // Docker status indicator
+  // Pipeline execution status
+  // File validation status
+  ```
+
+## 🧪 Testing Implementation Tasks
+- [ ] **Unit tests for DockerService methods**
+- [ ] **Integration tests for pipeline execution flow**
+- [ ] **UI tests for file drag-and-drop**
+- [ ] **Error scenario testing (Docker not running, invalid files)**
+
+## 📋 Implementation Notes
+
+### Quick Start Recommendation:
+1. **Start with Pipeline model completion** - Everything else depends on this
+2. **Implement `runPipeline()` method** - This is the core functionality
+3. **Add service integration to MainController** - Connect UI to backend
+4. **Test with a simple pipeline** - Verify end-to-end flow works
+
+### Development Tips:
+- **Test each method independently** before integrating
+- **Use Result<T> pattern consistently** for error handling
+- **Add logging to track execution flow** during development
+- **Keep UI responsive** with coroutines for long operations
+
+### Architecture Decisions:
+- **Pipeline model is the contract** between UI and Docker execution
+- **Result<T> pattern provides consistent error handling**
+- **Services are stateless** - MainController manages UI state
+- **Coroutines handle async operations** without blocking UI
 
 ---
-
-## 📝 Notes for Development
-
-**Immediate Next Steps (This Week):**
-1. Fix DockerService volume mounting issues
-2. Test end-to-end pipeline execution with FastQC
-3. Implement basic result collection
-4. Create comprehensive error handling
-
-**Key Design Principles to Maintain:**
-- Keep UI simple and intuitive for wet lab biologists
-- Maintain flexibility for both basic and advanced users  
-- Ensure all operations are reversible and safe
-- Prioritize data integrity and result reproducibility
-
-**Testing Strategy:**
-- Test each phase incrementally before moving to the next
-- Always test with real bioinformatics data and workflows
-- Include both automated tests and manual user testing
-- Document all test scenarios and edge cases
-
-*This TODO will be updated regularly as development progresses and priorities evolve.*
+*This TODO focuses on concrete implementation gaps that prevent core functionality from working. Complete Phase 1 for basic pipeline execution capability.*

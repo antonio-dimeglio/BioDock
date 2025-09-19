@@ -1,5 +1,6 @@
 package io.github.antoniodimeglio.biodock.biodock.service
 
+import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
 import io.github.antoniodimeglio.biodock.biodock.model.Project
 import io.github.antoniodimeglio.biodock.biodock.util.Result
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -61,6 +62,19 @@ object FileService {
         }
     }
 
+    fun validateFileFormat(file: File, pipeline: Pipeline): Result<String> {
+        // TODO: Refactor code to map expected format to function that checks if file format is valid.
+        return when {
+            !file.exists() -> Result.Error("File does not exist")
+            !file.canRead() -> Result.Error("Cannot read file")
+            file.length() == 0L -> Result.Error("File is empty")
+            !file.name.matches(Regex(".*\\.(fastq|fq)(\\.gz)?$")) ->
+                Result.Error("File has incorrect extension")
+
+            else -> isFastqFormatValid(file)
+        }
+    }
+
     fun validateFastqFile(file: File): Result<String> {
         return when {
             !file.exists() -> Result.Error("File does not exist")
@@ -119,5 +133,9 @@ object FileService {
                 .map { it.toFile() }
                 .toList()
         }
+    }
+
+    fun createLink(from: String, to: String){
+        Files.createLink(Paths.get(to), Paths.get(from))
     }
 }

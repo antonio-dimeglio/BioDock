@@ -1,5 +1,6 @@
 package io.github.antoniodimeglio.biodock.biodock.model
 
+import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
 import io.github.antoniodimeglio.biodock.biodock.util.FileSerializer
 import io.github.antoniodimeglio.biodock.biodock.util.LocalDateSerializer
 import kotlinx.serialization.Serializable
@@ -19,7 +20,7 @@ data class Project(
     val samples: MutableList<Sample> = mutableListOf(),
     @Serializable(with = FileSerializer::class)
     var workingDirectory: File = File("/BioDockProjects/NewProject/"),
-    var selectedPipeline: String = "",
+    var selectedPipeline: Pipeline? = PipelineService.getAvailablePipelines().first(),
 ) {
     fun addSample(sample: Sample) {
         samples.add(sample)

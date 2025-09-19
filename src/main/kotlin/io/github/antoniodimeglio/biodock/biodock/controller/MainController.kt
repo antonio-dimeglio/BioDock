@@ -1,7 +1,9 @@
-package io.github.antoniodimeglio.biodock.biodock.controller
+ package io.github.antoniodimeglio.biodock.biodock.controller
 
 
+import io.github.antoniodimeglio.biodock.biodock.model.Pipeline
 import io.github.antoniodimeglio.biodock.biodock.model.Project
+import io.github.antoniodimeglio.biodock.biodock.model.Sample
 import io.github.antoniodimeglio.biodock.biodock.service.DockerService
 import io.github.antoniodimeglio.biodock.biodock.service.FileService
 import io.github.antoniodimeglio.biodock.biodock.service.PipelineService
@@ -43,7 +45,7 @@ class MainController : Initializable {
     lateinit var newProjectButton: Button
 
     // Top toolbar
-    @FXML private lateinit var pipelineSelector: ComboBox<String>
+    @FXML private lateinit var pipelineSelector: ComboBox<Pipeline>
     @FXML private lateinit var openFileBtn: Button
     @FXML private lateinit var runBtn: Button
     @FXML private lateinit var statusLabel: Label
@@ -68,10 +70,10 @@ class MainController : Initializable {
     @FXML private lateinit var versionLabel: Label
     @FXML private lateinit var timestampLabel: Label
 
-    private val selectedFiles = mutableListOf<File>()
-    private var currentProject = Project(
-        name = "NewProject",
-    )
+    private var currentProject = Project(name = "NewProject")
+    private val samples get() = currentProject.samples
+
+
     private val uiScope = CoroutineScope(Dispatchers.Unconfined + SupervisorJob())
     private val dockerService = DockerService()
 
@@ -84,15 +86,32 @@ class MainController : Initializable {
     private fun setupUI() {
         val availablePipelines = PipelineService.getAvailablePipelines()
 
-        pipelineSelector.items.addAll(
-            availablePipelines.map { it.name }
-        )
+        pipelineSelector.items.addAll(availablePipelines)
+        pipelineSelector.selectionModel.selectFirst()
+
+
+        pipelineSelector.setCellFactory {
+            object : ListCell<Pipeline>() {
+                override fun updateItem(item: Pipeline?, empty: Boolean) {
+                    super.updateItem(item, empty)
+                    text = if (empty || item == null) null else item.name
+                }
+            }
+        }
+
+        // Set up how the selected Pipeline is displayed
+        pipelineSelector.buttonCell = object : ListCell<Pipeline>() {
+            override fun updateItem(item: Pipeline?, empty: Boolean) {
+                super.updateItem(item, empty)
+                text = if (empty || item == null) null else item.name
+            }
+        }
+
         pipelineSelector.selectionModel.selectFirst()
 
         projectNameLabel.text = "New Project"
         statusLabel.text = "Ready"
         overallStatusLabel.text = "Ready"
-        selectedPipelineLabel.text = pipelineSelector.value
         versionLabel.text = "BioDock v1.0.0"
 
         progressBar.progress = 0.0
@@ -114,7 +133,7 @@ class MainController : Initializable {
 
     private fun setupEventHandlers() {
         pipelineSelector.setOnAction {
-            selectedPipelineLabel.text = pipelineSelector.value
+            selectedPipelineLabel.text = pipelineSelector.value.name
             logger.info { "Pipeline selected: ${pipelineSelector.value}" }
         }
 
@@ -133,10 +152,14 @@ class MainController : Initializable {
 
             if (db.hasFiles()) {
                 db.files.forEach { file ->
-                    if (!selectedFiles.contains(file) &&
-                        FileService.validateFastqFile(file) is Result.Success){
-                        selectedFiles.add(file)
-                    }
+                    // TODO: change to instead just check if the format matches
+                    // the expected one by the pipeline
+                    val newSamples = db.files
+                        .filter { FileService.validateFastqFile(it) is Result.Success }
+                        .filter { file -> samples.none { sample -> sample.file == file } }
+                        .map { Sample(name = it.name, file = it, isValid = true) }
+
+                    samples.addAll(newSamples)
                 }
 
                 success = true
@@ -161,12 +184,12 @@ class MainController : Initializable {
     }
 
     private fun updateUI() {
-        sampleCountLabel.text = selectedFiles.size.toString()
-        runBtn.isDisable = selectedFiles.isEmpty()
+        sampleCountLabel.text = samples.size.toString()
+        runBtn.isDisable = samples.isEmpty()
 
 
         sampleListView.items.clear()
-        sampleListView.items.addAll(selectedFiles.map { it.name })
+        sampleListView.items.addAll(samples.map { it.name })
         updateDockerStatus()
     }
 
@@ -185,6 +208,14 @@ class MainController : Initializable {
         return files
     }
 
+    private fun loadProject(project: Project) {
+        currentProject = project
+        projectNameLabel.text = currentProject.name
+
+
+        pipelineSelector.value = currentProject.selectedPipeline
+    }
+
     private fun showErrorDialog(description: String) {
         val alert = Alert(Alert.AlertType.ERROR).apply {
             this.title = "Error"
@@ -198,7 +229,7 @@ class MainController : Initializable {
         val timeline = Timeline(
             KeyFrame(Duration.seconds(1.0), EventHandler<ActionEvent> {
                 progressBar.progress += 0.2
-                progressLabel.text = "Processing sample ${(progressBar.progress * selectedFiles.size).toInt() + 1}..."
+                progressLabel.text = "Processing sample ${(progressBar.progress * samples.size).toInt() + 1}..."
 
                 if (progressBar.progress >= 1.0) {
                     statusLabel.text = "Complete"
@@ -210,15 +241,6 @@ class MainController : Initializable {
             cycleCount = 5
         }
         timeline.play()
-    }
-
-    private fun loadProject(project: Project) {
-        currentProject = project
-        projectNameLabel.text = currentProject.name
-
-        if (currentProject.selectedPipeline?.isNotEmpty() == true){
-            pipelineSelector.value = currentProject.selectedPipeline
-        }
     }
 
     @FXML private fun saveProject(){
@@ -244,6 +266,7 @@ class MainController : Initializable {
             showErrorDialog("Error when trying to save the project: ${e.message}")
         }
     }
+
     @FXML private fun newProject() {
         try {
             val loader = FXMLLoader(javaClass.getResource("/fxml/project-view.fxml"))
@@ -276,15 +299,17 @@ class MainController : Initializable {
         val files = getFilesFromDialog()
 
         if (files != null) {
-            selectedFiles.addAll(
-                files.filter { FileService.validateFastqFile(it) is Result.Success  &&
-                    !selectedFiles.contains(it)}
-            )
+            val newSamples = files
+                .filter { FileService.validateFastqFile(it) is Result.Success }
+                .filter { file -> samples.none { sample -> sample.file == file } }
+                .map { Sample(name = it.name, file = it) }
 
+            samples.addAll(newSamples)
             updateUI()
-            logArea.appendText("Added ${files.size} files\n")
+            logArea.appendText("Added ${newSamples.size} files\n")
         }
     }
+
     @FXML private fun removeSample() {
         val selected = sampleListView.selectionModel.selectedItems.toList()
 
@@ -302,13 +327,14 @@ class MainController : Initializable {
             sampleListView.selectionModel.clearSelection()
 
             selected.forEach { item ->
-                val fileToRemove = selectedFiles.find { it.name == item }
+                val fileToRemove = samples.find { it.name == item }
                 if (fileToRemove != null) {
-                    selectedFiles.remove(fileToRemove)
+                    samples.remove(fileToRemove)
                 }
             }
         }
     }
+
     @FXML private fun clearSamples() {
         val alert = Alert(Alert.AlertType.CONFIRMATION).apply {
             title = "Confirm Deletion"
@@ -321,7 +347,7 @@ class MainController : Initializable {
             sampleListView.items.clear()
             sampleListView.selectionModel.clearSelection()
 
-            selectedFiles.clear()
+            samples.clear()
         }
     }
 
@@ -343,10 +369,15 @@ class MainController : Initializable {
         progressLabel.text = "Initializing..."
 
         logArea.appendText("Starting ${pipelineSelector.value} analysis...\n")
-        logArea.appendText("Processing ${selectedFiles.size} samples\n")
+        logArea.appendText("Processing ${samples.size} samples\n")
 
         // TODO: Implement actual FastQC execution in Phase 3
         // For now, just simulate progress
         simulateProgress()
+    }
+    @FXML
+    private fun runPipeline() {
+        val selectedPipeline = pipelineSelector.value
+
     }
 }
